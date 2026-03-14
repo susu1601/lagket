@@ -6,7 +6,6 @@ module.exports = ({ config }) => {
     ...config,
     name: "lagket",
     slug: "lagket",
-    owner: "admina2",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",

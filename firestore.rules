@@ -1,0 +1,214 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for search)
+      allow read: if true;
+      
+      // Only authenticated users can create their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Only the user can update their own profile
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      // Only the user can delete their own profile
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Friends collection
+    match /friends/{userId} {
+      // Any authenticated user can read friend data (needed to check relationship status)
+      allow read: if request.auth != null;
+      
+      // Users can create their own friend document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Any authenticated user can update to send/accept/decline friend requests
+      allow update: if request.auth != null;
+      
+      // Users can delete their own friend document
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User Albums collection
+    match /userAlbums/{userId} {
+      // Helper function to check if users are friends
+      function isFriend() {
+        let friendDoc = get(/databases/$(database)/documents/friends/$(request.auth.uid));
+        return friendDoc != null && friendDoc.data.friends != null && friendDoc.data.friends.hasAny([userId]);
+      }
+      
+      // Users can read their own album
+      // Friends can read each other's albums
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isFriend()
+      );
+      
+      // Only the user can create/update/delete their own album
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if request.auth != null && request.auth.uid == resource.data.recipientId;
+      
+      // Any authenticated user can create notifications
+      allow create: if request.auth != null;
+      
+      // Users can update/delete their own notifications (mark as read)
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.recipientId;
+    }
+    
+    // Families collection
+    match /families/{familyId} {
+      // Members can read their family data
+      allow read: if request.auth != null && request.auth.uid in resource.data.members;
+      
+      // Authenticated users can create families
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
+      
+      // Members can update family OR users can add themselves when accepting invitation
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.members ||
+        request.auth.uid in request.resource.data.members
+      );
+      
+      // Only creator can delete family
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Family Requests collection
+    match /familyRequests/{userId} {
+      // Anyone authenticated can read (needed to check existing requests before sending)
+      allow read: if request.auth != null;
+      
+      // Anyone authenticated can write (create/update) to send requests
+      allow write: if request.auth != null;
+      
+      // Users can delete their own requests
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Family Photos collection
+    match /familyPhotos/{familyId}/photos/{photoId} {
+      // Helper function to check if user is family member
+      function isFamilyMember() {
+        let familyDoc = get(/databases/$(database)/documents/families/$(familyId));
+        return familyDoc != null && familyDoc.data.members != null && request.auth.uid in familyDoc.data.members;
+      }
+      
+      // Members can read family photos
+      allow read: if request.auth != null && isFamilyMember();
+      
+      // Members can create photos
+      allow create: if request.auth != null && isFamilyMember() && request.auth.uid == request.resource.data.uploadedBy;
+      
+      // Uploader can update their own photos
+      allow update: if request.auth != null && request.auth.uid == resource.data.uploadedBy;
+      
+      // Uploader or family creator can delete photos
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.uploadedBy ||
+        (isFamilyMember() && exists(/databases/$(database)/documents/families/$(familyId)) && get(/databases/$(database)/documents/families/$(familyId)).data.createdBy == request.auth.uid)
+      );
+    }
+    
+    // User data subcollection (album)
+    match /users/{userId}/data/{document} {
+      // Helper function to check if users are friends
+      function isFriend() {
+        let friendDoc = get(/databases/$(database)/documents/friends/$(request.auth.uid));
+        return friendDoc != null && friendDoc.data.friends != null && friendDoc.data.friends.hasAny([userId]);
+      }
+      
+      // Users can read their own data
+      // Friends can read each other's album data
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isFriend()
+      );
+      
+      // Only the user can create/update/delete their own data
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Favorites subcollection
+    match /users/{userId}/favorites/{photoId} {
+      // Only the user can read their own favorites
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Only the user can add/remove favorites
+      allow create, delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Only the user can update their favorites
+      allow update: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // UserAlbums collection (main album storage)
+    match /userAlbums/{userId} {
+      // Helper function to check if users are friends
+      function isFriend() {
+        let friendDoc = get(/databases/$(database)/documents/friends/$(request.auth.uid));
+        return friendDoc != null && friendDoc.data.friends != null && friendDoc.data.friends.hasAny([userId]);
+      }
+      
+      // Users can read their own album
+      // Friends can read each other's albums
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isFriend()
+      );
+      
+      // Only the user can create/update/delete their own album
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Chats collection
+    match /chats/{chatId} {
+      // Helper function to check if user is participant (for existing chats)
+      function isParticipant() {
+        return request.auth.uid in resource.data.participants;
+      }
+      
+      // Helper function to check if user will be participant (for new chats)
+      function willBeParticipant() {
+        return request.auth.uid in request.resource.data.participants;
+      }
+      
+      // Participants can read their chats OR anyone can read to check if chat exists
+      allow read: if request.auth != null && (
+        !exists(/databases/$(database)/documents/chats/$(chatId)) ||
+        isParticipant()
+      );
+      
+      // Any authenticated user can create a chat if they are a participant
+      allow create: if request.auth != null && willBeParticipant();
+      
+      // Participants can update chat (for lastMessage)
+      allow update: if request.auth != null && isParticipant();
+      
+      // No one can delete chats
+      allow delete: if false;
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Participants can read messages
+        allow read: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        
+        // Participants can create messages
+        allow create: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+          request.auth.uid == request.resource.data.senderId;
+        
+        // Sender or receiver can update messages (for read status)
+        allow update: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        
+        // Participants can delete messages
+        allow delete: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+  }
+}

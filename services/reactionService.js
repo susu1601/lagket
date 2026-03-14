@@ -1,10 +1,10 @@
 // Reaction Service - Emoji reactions on photos
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  deleteField 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteField
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -18,11 +18,18 @@ const EMOJI_LIST = ["❤️", "😂", "😍", "🔥", "👏", "😢"];
 export { EMOJI_LIST };
 
 // Add or update a reaction
-export async function addReaction(userId, photoId, emoji, userName = "Bạn", ownerUserId = null) {
+export async function addReaction(
+  userId,
+  photoId,
+  emoji,
+  userName = "Bạn",
+  ownerUserId = null,
+  photoMeta = {}
+) {
   try {
     const reactionRef = doc(db, "reactions", photoId);
     const reactionSnap = await getDoc(reactionRef);
-    
+
     const reactionData = {
       emoji,
       userName,
@@ -38,7 +45,7 @@ export async function addReaction(userId, photoId, emoji, userName = "Bạn", ow
         [userId]: reactionData,
       });
     }
-    
+
     console.log("✅ Reaction added:", { photoId, userId, emoji });
 
     // Send notification to photo owner
@@ -51,7 +58,12 @@ export async function addReaction(userId, photoId, emoji, userName = "Bạn", ow
           type: NOTIFICATION_TYPES.REACTION,
           title: "Cảm xúc mới",
           message: `${userName} đã thả ${emoji} cho ảnh của bạn`,
-          data: { photoId, emoji },
+          data: {
+            photoId,
+            emoji,
+            photoUrl: photoMeta?.photoUrl || null,
+            caption: photoMeta?.caption || "",
+          },
         });
       } catch (notifErr) {
         console.warn("⚠️ Failed to send reaction notification:", notifErr);
@@ -70,15 +82,15 @@ export async function removeReaction(userId, photoId) {
   try {
     const reactionRef = doc(db, "reactions", photoId);
     const reactionSnap = await getDoc(reactionRef);
-    
+
     if (!reactionSnap.exists()) return false;
 
     const data = reactionSnap.data();
     delete data[userId];
-    
+
     // If no reactions left, keep empty doc
     await setDoc(reactionRef, data);
-    
+
     console.log("✅ Reaction removed:", { photoId, userId });
     return true;
   } catch (error) {
@@ -92,9 +104,9 @@ export async function getReactions(photoId) {
   try {
     const reactionRef = doc(db, "reactions", photoId);
     const reactionSnap = await getDoc(reactionRef);
-    
+
     if (!reactionSnap.exists()) return {};
-    
+
     return reactionSnap.data();
   } catch (error) {
     if (error?.code !== 'permission-denied') {

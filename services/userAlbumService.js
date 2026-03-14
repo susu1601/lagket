@@ -1,9 +1,9 @@
 // User Album Service - Manage user photos with Cloudinary + Firebase
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -39,10 +39,10 @@ export async function addPhotoToUserAlbum(userId, photoData) {
   try {
     const albumRef = doc(db, "userAlbums", userId);
     const albumSnap = await getDoc(albumRef);
-    
+
     // Generate unique ID: timestamp + random string
     const uniqueId = photoData.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const photo = {
       id: uniqueId,
       cloudinaryUrl: photoData.cloudinaryUrl,
@@ -54,19 +54,19 @@ export async function addPhotoToUserAlbum(userId, photoData) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     if (albumSnap.exists()) {
       // Update existing album
       const existingPhotos = albumSnap.data().photos || [];
-      
+
       // Check if photo with same ID already exists
       const photoExists = existingPhotos.some(p => p.id === uniqueId);
-      
+
       if (photoExists) {
         console.log("⚠️ Photo already exists in album:", uniqueId);
         return photo;
       }
-      
+
       // Add new photo
       await updateDoc(albumRef, {
         photos: arrayUnion(photo),
@@ -86,7 +86,7 @@ export async function addPhotoToUserAlbum(userId, photoData) {
       } catch (e) {
         console.warn("Could not get user name:", e);
       }
-      
+
       await setDoc(albumRef, {
         userId: userId,
         userName: userName,
@@ -95,7 +95,7 @@ export async function addPhotoToUserAlbum(userId, photoData) {
         lastUpdated: new Date().toISOString()
       });
     }
-    
+
     console.log("✅ Photo added to user album:", userId);
     return photo;
   } catch (error) {
@@ -109,43 +109,43 @@ export async function cleanupUserAlbum(userId) {
   try {
     const albumRef = doc(db, "userAlbums", userId);
     const albumSnap = await getDoc(albumRef);
-    
+
     if (!albumSnap.exists()) {
       return { removed: 0, kept: 0 };
     }
-    
+
     const data = albumSnap.data();
     const allPhotos = data.photos || [];
-    
+
     // Keep only valid photos with cloudinaryUrl and unique IDs
     const validPhotos = [];
     const seenIds = new Set();
     let removedCount = 0;
-    
+
     for (const photo of allPhotos) {
       if (!photo.cloudinaryUrl) {
         console.log("🗑️ Removing photo without cloudinaryUrl:", photo.id);
         removedCount++;
         continue;
       }
-      
+
       if (seenIds.has(photo.id)) {
         console.log("🗑️ Removing duplicate photo:", photo.id);
         removedCount++;
         continue;
       }
-      
+
       seenIds.add(photo.id);
       validPhotos.push(photo);
     }
-    
+
     // Update album with cleaned photos
     await updateDoc(albumRef, {
       photos: validPhotos,
       totalPhotos: validPhotos.length,
       lastUpdated: new Date().toISOString()
     });
-    
+
     console.log(`✅ Cleaned album: removed ${removedCount}, kept ${validPhotos.length}`);
     return { removed: removedCount, kept: validPhotos.length };
   } catch (error) {
@@ -159,7 +159,7 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
   try {
     const albumRef = doc(db, "userAlbums", userId);
     const albumSnap = await getDoc(albumRef);
-    
+
     if (!albumSnap.exists()) {
       return {
         userId,
@@ -167,9 +167,9 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
         totalPhotos: 0
       };
     }
-    
+
     const data = albumSnap.data();
-    
+
     // Filter out invalid photos (no cloudinaryUrl) and ensure unique IDs
     const validPhotos = (data.photos || [])
       .filter(photo => {
@@ -180,11 +180,11 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
         }
         return true;
       });
-    
+
     // Remove duplicates by ID (keep the newest one)
     const uniquePhotos = [];
     const seenIds = new Set();
-    
+
     for (const photo of validPhotos) {
       if (!seenIds.has(photo.id)) {
         seenIds.add(photo.id);
@@ -193,12 +193,17 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
         console.warn("⚠️ Skipping duplicate photo ID:", photo.id);
       }
     }
-    
+
     // Sort photos by createdAt (newest first)
     const photos = uniquePhotos
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, maxPhotos);
-    
+      .slice(0, maxPhotos)
+      .map(photo => ({
+        ...photo,
+        userId: photo.userId || userId,
+        userName: photo.userName || data.userName || "Bạn",
+      }));
+
     return {
       userId,
       photos,
@@ -219,18 +224,25 @@ export async function getFriendAlbum(currentUserId, friendId) {
   try {
     // Check if they are friends
     const friendDoc = await getDoc(doc(db, "friends", currentUserId));
-    
+
     if (!friendDoc.exists()) {
       throw new Error("Bạn chưa kết bạn với người này");
     }
-    
+
     const friends = friendDoc.data().friends || [];
     if (!friends.includes(friendId)) {
       throw new Error("Bạn chưa kết bạn với người này");
     }
-    
+
     // Get friend's album
-    return await getUserAlbum(friendId);
+    const friendAlbum = await getUserAlbum(friendId);
+    return {
+      ...friendAlbum,
+      photos: (friendAlbum.photos || []).map(photo => ({
+        ...photo,
+        userId: photo.userId || friendId,
+      })),
+    };
   } catch (error) {
     console.error("❌ Error getting friend album:", error);
     throw error;
@@ -241,41 +253,41 @@ export async function getFriendAlbum(currentUserId, friendId) {
 export async function deletePhotoFromUserAlbum(userId, photoId) {
   try {
     console.log("🗑️ Deleting photo from Firebase:", { userId, photoId });
-    
+
     if (!userId || !photoId) {
       throw new Error("userId và photoId không được để trống");
     }
-    
+
     const albumRef = doc(db, "userAlbums", userId);
     const albumSnap = await getDoc(albumRef);
-    
+
     if (!albumSnap.exists()) {
       console.log("⚠️ Album không tồn tại, tạo mới");
       return null; // Album chưa tồn tại, không cần xóa
     }
-    
+
     const data = albumSnap.data();
     const photos = data.photos || [];
     console.log("📸 Current photos count:", photos.length);
-    
+
     const photoToDelete = photos.find(p => p && p.id && p.id.toString() === photoId.toString());
-    
+
     if (!photoToDelete) {
       console.log("⚠️ Ảnh không tồn tại trong album:", photoId);
       return null; // Ảnh không tồn tại, không cần xóa
     }
-    
+
     console.log("🎯 Found photo to delete:", photoToDelete);
-    
+
     // Remove photo from array - sử dụng filter thay vì arrayRemove để tránh lỗi
     const updatedPhotos = photos.filter(p => p && p.id && p.id.toString() !== photoId.toString());
-    
+
     await updateDoc(albumRef, {
       photos: updatedPhotos,
       totalPhotos: Math.max(0, updatedPhotos.length),
       lastUpdated: new Date().toISOString()
     });
-    
+
     console.log("✅ Photo deleted from album:", photoId);
     return photoToDelete;
   } catch (error) {
@@ -289,35 +301,35 @@ export async function updatePhotoInUserAlbum(userId, photoId, updates) {
   try {
     const albumRef = doc(db, "userAlbums", userId);
     const albumSnap = await getDoc(albumRef);
-    
+
     if (!albumSnap.exists()) {
       throw new Error("Album không tồn tại");
     }
-    
+
     const data = albumSnap.data();
     const photos = data.photos || [];
     const photoIndex = photos.findIndex(p => p.id === photoId);
-    
+
     if (photoIndex === -1) {
       throw new Error("Ảnh không tồn tại");
     }
-    
+
     // Update photo
     const updatedPhoto = {
       ...photos[photoIndex],
       ...updates,
       updatedAt: new Date().toISOString()
     };
-    
+
     // Replace in array
     const newPhotos = [...photos];
     newPhotos[photoIndex] = updatedPhoto;
-    
+
     await updateDoc(albumRef, {
       photos: newPhotos,
       lastUpdated: new Date().toISOString()
     });
-    
+
     console.log("✅ Photo updated:", photoId);
     return updatedPhoto;
   } catch (error) {
@@ -331,17 +343,17 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
   try {
     // Get user's friends
     const friendDoc = await getDoc(doc(db, "friends", userId));
-    
+
     if (!friendDoc.exists()) {
       return [];
     }
-    
+
     const friendIds = friendDoc.data().friends || [];
-    
+
     if (friendIds.length === 0) {
       return [];
     }
-    
+
     // Get albums from all friends (with userName)
     const albumResults = await Promise.all(
       friendIds.map(async (friendId) => {
@@ -353,11 +365,11 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
           if (albumSnap.exists()) {
             userName = albumSnap.data().userName || "Bạn bè";
           }
-        } catch (e) {}
+        } catch (e) { }
         return { ...album, userName };
       })
     );
-    
+
     // Combine and sort all photos
     const allPhotos = [];
     albumResults.forEach(album => {
@@ -369,10 +381,10 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
         });
       });
     });
-    
+
     // Sort by createdAt (newest first)
     allPhotos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
     return allPhotos.slice(0, maxPhotos);
   } catch (error) {
     console.error("❌ Error getting friends photos:", error);
@@ -384,19 +396,19 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
 export async function searchPhotosByTags(userId, tags) {
   try {
     const album = await getUserAlbum(userId);
-    
+
     if (!tags || tags.length === 0) {
       return album.photos;
     }
-    
+
     // Filter photos that have any of the tags
     const filtered = album.photos.filter(photo => {
       const photoTags = photo.tags || [];
-      return tags.some(tag => 
+      return tags.some(tag =>
         photoTags.some(pt => pt.toLowerCase().includes(tag.toLowerCase()))
       );
     });
-    
+
     return filtered;
   } catch (error) {
     console.error("❌ Error searching photos:", error);
@@ -408,20 +420,20 @@ export async function searchPhotosByTags(userId, tags) {
 export async function getAlbumStats(userId) {
   try {
     const album = await getUserAlbum(userId);
-    
+
     const stats = {
       totalPhotos: album.totalPhotos,
       withLocation: album.photos.filter(p => p.location).length,
       withAI: album.photos.filter(p => p.aiAnalysis).length,
       withTags: album.photos.filter(p => p.tags && p.tags.length > 0).length,
-      oldestPhoto: album.photos.length > 0 
-        ? album.photos[album.photos.length - 1].createdAt 
+      oldestPhoto: album.photos.length > 0
+        ? album.photos[album.photos.length - 1].createdAt
         : null,
-      newestPhoto: album.photos.length > 0 
-        ? album.photos[0].createdAt 
+      newestPhoto: album.photos.length > 0
+        ? album.photos[0].createdAt
         : null
     };
-    
+
     return stats;
   } catch (error) {
     console.error("❌ Error getting album stats:", error);

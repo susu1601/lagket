@@ -73,9 +73,9 @@ function FriendsStack() {
     <Stack.Navigator>
       <Stack.Screen name="UnifiedFriends" component={UnifiedFriendsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SearchUsers" component={SearchUsersScreen} options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="FriendProfile" 
-        component={FriendProfileScreen} 
+      <Stack.Screen
+        name="FriendProfile"
+        component={FriendProfileScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen name="FriendAlbum" component={FriendAlbumScreen} options={{ headerShown: false }} />
@@ -96,7 +96,14 @@ export default function MainNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => {
         const routeName = getFocusedRouteNameFromRoute(route) ?? '';
-        const hideTabBarScreens = ['ChatDetail', 'ChatList'];
+        const hideTabBarScreens = [
+          'ChatDetail',
+          'ChatList',
+          'MyPhotoDetail',
+          'OtherPhotoDetail',
+          'PhotoDetail',
+          'Detail',
+        ];
         const shouldHideTabBar = hideTabBarScreens.includes(routeName);
 
         return {
@@ -117,11 +124,11 @@ export default function MainNavigator() {
             else if (route.name === "Friends") icon = "people-outline";
             else if (route.name === "Profile") icon = "person-outline";
             else icon = "ellipse-outline";
-            
+
             if (focused && icon && !icon.includes('add')) {
               icon = icon.replace('-outline', '');
             }
-            
+
             return <Ionicons name={icon} size={28} color={focused ? "#fff" : color} />;
           },
           tabBarActiveTintColor: '#fff',
@@ -152,13 +159,13 @@ export default function MainNavigator() {
       }}
       initialRouteName="Camera"
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeStack}
       />
-      <Tab.Screen 
-        name="Camera" 
-        options={{ 
+      <Tab.Screen
+        name="Camera"
+        options={{
           tabBarLabel: "",
           tabBarStyle: { display: 'none' }
         }}
@@ -173,15 +180,15 @@ export default function MainNavigator() {
           </Stack.Navigator>
         )}
       </Tab.Screen>
-      <Tab.Screen 
-        name="Friends" 
-        component={FriendsStack} 
-        options={{ 
+      <Tab.Screen
+        name="Friends"
+        component={FriendsStack}
+        options={{
           headerShown: false,
-        }} 
+        }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         options={{ tabBarLabel: "Me", headerShown: false }}
       >
         {() => (

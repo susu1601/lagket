@@ -61,19 +61,31 @@ export default function OtherPhotoDetailScreen({ route, navigation }) {
       if (reactions[user.uid]) {
         setMyReaction(reactions[user.uid].emoji);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleReaction = async (emoji) => {
     setShowEmojiPicker(false);
     if (!user?.uid || !photo?.id) return;
+    const imageUri = photo.cloudinaryUrl || photo.uri || photo.localUri;
+    const caption = photo.caption || photo.note || "";
     try {
       if (myReaction === emoji) {
         await removeReaction(user.uid, photo.id);
         setMyReaction(null);
         setReactionCount(prev => Math.max(0, prev - 1));
       } else {
-        await addReaction(user.uid, photo.id, emoji, user.displayName || "Bạn", photo.userId);
+        await addReaction(
+          user.uid,
+          photo.id,
+          emoji,
+          user.displayName || "Bạn",
+          photo.userId,
+          {
+            photoUrl: imageUri,
+            caption,
+          }
+        );
         setMyReaction(emoji);
         if (!myReaction) setReactionCount(prev => prev + 1);
       }
@@ -174,21 +186,21 @@ export default function OtherPhotoDetailScreen({ route, navigation }) {
 
       {/* Info Panel - Swipeable */}
       {showInfo && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.infoPanel,
             { transform: [{ translateY }] }
           ]}
           {...panResponder.panHandlers}>
           <View style={styles.swipeHandle} />
-          
+
           {photo.createdAt && (
             <View style={styles.infoRow}>
               <Ionicons name="time-outline" size={18} color="#666" />
               <Text style={styles.infoText}>
-                {new Date(photo.createdAt).toLocaleDateString('vi-VN', { 
-                  day: '2-digit', 
-                  month: '2-digit', 
+                {new Date(photo.createdAt).toLocaleDateString('vi-VN', {
+                  day: '2-digit',
+                  month: '2-digit',
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
@@ -196,7 +208,7 @@ export default function OtherPhotoDetailScreen({ route, navigation }) {
               </Text>
             </View>
           )}
-          
+
           {photo.location && (
             <View style={styles.infoRow}>
               <Ionicons name="location-outline" size={18} color="#666" />

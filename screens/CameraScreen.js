@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useContext, useCallback } from "react";
-import { 
-  View, TextInput, Image, Button, KeyboardAvoidingView, Platform, 
+import {
+  View, TextInput, Image, Button, KeyboardAvoidingView, Platform,
   ScrollView, StyleSheet, TouchableOpacity, Text, FlatList,
   Dimensions, RefreshControl, ActivityIndicator, Alert
 } from "react-native";
@@ -82,7 +82,7 @@ function CameraFeedCard({ item, currentUser, navigation }) {
       if (reactions[currentUser.uid]) {
         setMyReaction(reactions[currentUser.uid].emoji);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleReaction = async (emoji) => {
@@ -94,7 +94,17 @@ function CameraFeedCard({ item, currentUser, navigation }) {
         setMyReaction(null);
         setReactionCount(prev => Math.max(0, prev - 1));
       } else {
-        await addReaction(currentUser.uid, item.id, emoji, currentUser.displayName || "Bạn", item.userId);
+        await addReaction(
+          currentUser.uid,
+          item.id,
+          emoji,
+          currentUser.displayName || "Bạn",
+          item.userId,
+          {
+            photoUrl: imageUri,
+            caption,
+          }
+        );
         setMyReaction(emoji);
         if (!myReaction) setReactionCount(prev => prev + 1);
       }
@@ -127,7 +137,7 @@ function CameraFeedCard({ item, currentUser, navigation }) {
 
   return (
     <View style={styles.feedCard}>
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.95}
         onPress={() => {
           if (isOwn) {
@@ -169,7 +179,7 @@ function CameraFeedCard({ item, currentUser, navigation }) {
       {!isOwn && (
         <View style={styles.reactionBar}>
           <View style={styles.reactionRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.reactionBtn, myReaction && styles.reactionBtnActive]}
               onPress={() => setShowEmojiPicker(!showEmojiPicker)}
             >
@@ -178,9 +188,9 @@ function CameraFeedCard({ item, currentUser, navigation }) {
               </Text>
             </TouchableOpacity>
           </View>
-          <EmojiPicker 
-            visible={showEmojiPicker} 
-            onSelect={handleReaction} 
+          <EmojiPicker
+            visible={showEmojiPicker}
+            onSelect={handleReaction}
             onClose={() => setShowEmojiPicker(false)}
             currentEmoji={myReaction}
           />
@@ -343,11 +353,11 @@ export default function CameraScreen({ navigation }) {
   const takePhoto = async () => {
     if (isCapturing) return;
     setIsCapturing(true);
-    
+
     try {
       if (cameraRef.current) {
         console.log("📸 Bắt đầu chụp ảnh...");
-        
+
         const shot = await cameraRef.current.takePictureAsync({
           quality: 0.5,
           base64: false,
@@ -357,11 +367,11 @@ export default function CameraScreen({ navigation }) {
 
         if (!mountedRef.current) return;
 
-        setPhoto({ 
-          uri: shot.uri, 
-          fileName: `photo_${Date.now()}.jpg`, 
-          width: shot.width, 
-          height: shot.height 
+        setPhoto({
+          uri: shot.uri,
+          fileName: `photo_${Date.now()}.jpg`,
+          width: shot.width,
+          height: shot.height
         });
 
         generateCaptions();
@@ -377,7 +387,7 @@ export default function CameraScreen({ navigation }) {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude
               });
-              
+
               if (geocode && geocode.length > 0) {
                 const bestMatch = geocode[0];
                 const addressArr = [bestMatch.name || bestMatch.street, bestMatch.city || bestMatch.subregion || bestMatch.region].filter(Boolean);
@@ -411,19 +421,19 @@ export default function CameraScreen({ navigation }) {
 
     try {
       const isSelfie = facing === "front";
-      
+
       let photoData = { uri: photo.uri, coords, note, labels: [], isSelfie, source: "camera" };
-      
+
       if (!photo.uri.startsWith('file://')) {
         photoData.uri = photo.uri;
       }
-      
+
       const created = await savePhotoToCloudinary(photoData, user.uid);
 
       console.log("💾 Syncing photo to Firebase...");
-      
+
       const cloudinaryUrl = created.uri || created.cloudinaryUrl;
-      
+
       if (!cloudinaryUrl || cloudinaryUrl.startsWith('file://')) {
         throw new Error("Không thể upload ảnh lên Cloudinary. Vui lòng kiểm tra kết nối internet và thử lại.");
       }
@@ -451,7 +461,7 @@ export default function CameraScreen({ navigation }) {
         try {
           console.log("📢 Notifying friends about new photo...");
           await notifyFriendsAboutNewPhoto(
-            user.uid, 
+            user.uid,
             user.displayName || user.email,
             {
               id: created.id,
@@ -474,7 +484,7 @@ export default function CameraScreen({ navigation }) {
       setIncludeLocation(true);
       setNotifyFriends(true);
       setSuggestedCaptions([]);
-      
+
       const newPhotoData = {
         id: created.id,
         cloudinaryUrl: created.uri || created.cloudinaryUrl,
@@ -542,7 +552,7 @@ export default function CameraScreen({ navigation }) {
               </View>
             </View>
 
-              {/* Removed duplicate nav views to fix syntax error length */}
+            {/* Removed duplicate nav views to fix syntax error length */}
 
             <View style={styles.bottomBar}>
               <TouchableOpacity
@@ -553,9 +563,9 @@ export default function CameraScreen({ navigation }) {
                 <Ionicons name="grid" size={26} color="#fff" />
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.shutter, isCapturing && { opacity: 0.6 }]} 
-                onPress={takePhoto} 
+              <TouchableOpacity
+                style={[styles.shutter, isCapturing && { opacity: 0.6 }]}
+                onPress={takePhoto}
                 disabled={isCapturing}
                 activeOpacity={0.7}
               >
@@ -581,14 +591,14 @@ export default function CameraScreen({ navigation }) {
           {/* ─── Page 2: Feed ────────────────────── */}
           <View style={styles.feedPage}>
             <View style={styles.feedHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
                 style={styles.feedHeaderBtn}
               >
                 <Ionicons name="arrow-back" size={22} color="#fff" />
               </TouchableOpacity>
               <Text style={styles.feedHeaderTitle}>Feed của bạn</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={onFeedRefresh}
                 style={styles.feedHeaderBtn}
               >
@@ -619,9 +629,9 @@ export default function CameraScreen({ navigation }) {
       ) : (
         <View style={styles.previewContainer}>
           <Image source={{ uri: photo.uri }} style={styles.previewImage} />
-          
+
           <View style={styles.previewHeader}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.previewButton}
               onPress={() => {
                 setPhoto(null);
@@ -663,7 +673,7 @@ export default function CameraScreen({ navigation }) {
                 ))}
               </ScrollView>
             )}
-            
+
             {locationName && (
               <TouchableOpacity
                 style={[styles.locationCheckIn, !includeLocation && styles.locationCheckInDisabled]}
@@ -673,30 +683,30 @@ export default function CameraScreen({ navigation }) {
                 <Text style={[styles.locationCheckInText, !includeLocation && styles.textDisabled]} numberOfLines={1}>
                   {locationName}
                 </Text>
-                <Ionicons 
-                  name={includeLocation ? "checkmark-circle" : "ellipse-outline"} 
-                  size={18} 
-                  color={includeLocation ? "#54b6f8" : "#999"} 
-                  style={{marginLeft: 4}}
+                <Ionicons
+                  name={includeLocation ? "checkmark-circle" : "ellipse-outline"}
+                  size={18}
+                  color={includeLocation ? "#54b6f8" : "#999"}
+                  style={{ marginLeft: 4 }}
                 />
               </TouchableOpacity>
             )}
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.notifyToggle, loading && styles.toggleDisabled]}
               onPress={() => !loading && setNotifyFriends(!notifyFriends)}
               disabled={loading}>
-              <Ionicons 
-                name={notifyFriends ? "notifications" : "notifications-off"} 
-                size={20} 
-                color={loading ? "#ccc" : (notifyFriends ? "#54b6f8" : "#999")} 
+              <Ionicons
+                name={notifyFriends ? "notifications" : "notifications-off"}
+                size={20}
+                color={loading ? "#ccc" : (notifyFriends ? "#54b6f8" : "#999")}
               />
               <Text style={[styles.notifyText, notifyFriends && !loading && styles.notifyTextActive, loading && styles.textDisabled]}>
                 Thông báo bạn bè
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.saveButton, loading && styles.saveButtonDisabled]}
               onPress={onSave}
               disabled={loading}>

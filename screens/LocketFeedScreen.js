@@ -62,7 +62,7 @@ function FeedItem({ item, isActive, currentUser, onDeleteItem }) {
       if (reactions[currentUser.uid]) {
         setMyReaction(reactions[currentUser.uid].emoji);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleReaction = async (emoji) => {
@@ -74,7 +74,17 @@ function FeedItem({ item, isActive, currentUser, onDeleteItem }) {
         setMyReaction(null);
         setReactionCount(prev => Math.max(0, prev - 1));
       } else {
-        await addReaction(currentUser.uid, item.id, emoji, currentUser.displayName || "Bạn", item.userId);
+        await addReaction(
+          currentUser.uid,
+          item.id,
+          emoji,
+          currentUser.displayName || "Bạn",
+          item.userId,
+          {
+            photoUrl: imageUri,
+            caption,
+          }
+        );
         setMyReaction(emoji);
         if (!myReaction) setReactionCount(prev => prev + 1);
       }

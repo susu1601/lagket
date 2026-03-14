@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,48 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../context/NotificationContext";
 import { NOTIFICATION_TYPES } from "../services/notificationService";
+import { AuthContext } from "../context/AuthContext";
+import { getUserAlbum } from "../services/userAlbumService";
 
 export default function NotificationScreen({ navigation }) {
   const { theme } = useTheme();
+  const { user } = useContext(AuthContext);
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+
+  const resolvePhotoFromNotification = async (notification) => {
+    const photoId = notification?.data?.photoId;
+    if (!photoId || !user?.uid) return null;
+
+    try {
+      const album = await getUserAlbum(user.uid, 300);
+      const matchedPhoto = (album?.photos || []).find(
+        (p) => String(p?.id) === String(photoId)
+      );
+
+      if (matchedPhoto) {
+        return {
+          ...matchedPhoto,
+          userId: matchedPhoto.userId || user.uid,
+          userName: matchedPhoto.userName || user.displayName || "Bạn",
+        };
+      }
+    } catch (error) {
+      console.warn("⚠️ Could not resolve photo from album:", error);
+    }
+
+    if (notification?.data?.photoUrl) {
+      return {
+        id: photoId,
+        userId: user.uid,
+        userName: user.displayName || "Bạn",
+        cloudinaryUrl: notification.data.photoUrl,
+        caption: notification.data.caption || "",
+        createdAt: notification.createdAt,
+      };
+    }
+
+    return null;
+  };
 
   const handleNotificationPress = async (notification) => {
     // Mark as read
@@ -30,9 +68,9 @@ export default function NotificationScreen({ navigation }) {
         // Navigate to family photos
         navigation.navigate("Friends", {
           screen: "FamilyPhotos",
-          params: { 
+          params: {
             familyId: notification.data.familyId,
-            familyName: notification.data.familyName 
+            familyName: notification.data.familyName
           }
         });
       } else {
@@ -40,9 +78,9 @@ export default function NotificationScreen({ navigation }) {
         const friendId = notification.senderId;
         navigation.navigate("Friends", {
           screen: "FriendAlbum",
-          params: { 
+          params: {
             friendId: friendId,
-            friendName: notification.senderName 
+            friendName: notification.senderName
           }
         });
       }
@@ -56,14 +94,18 @@ export default function NotificationScreen({ navigation }) {
       // Navigate to family request screen
       navigation.navigate("Friends", { screen: "FamilyRequest" });
     } else if (notification.type === NOTIFICATION_TYPES.REACTION) {
-      // Navigate to home to see the photo
-      navigation.navigate("Home");
+      const photo = await resolvePhotoFromNotification(notification);
+      if (photo) {
+        navigation.navigate("MyPhotoDetail", { photo });
+      } else {
+        navigation.navigate("Home");
+      }
     }
   };
 
   const renderNotification = ({ item }) => {
     const isUnread = !item.read;
-    
+
     return (
       <TouchableOpacity
         style={[
@@ -125,7 +167,7 @@ export default function NotificationScreen({ navigation }) {
 
   const formatTime = (date) => {
     if (!date) return "";
-    
+
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
@@ -136,7 +178,7 @@ export default function NotificationScreen({ navigation }) {
     if (minutes < 60) return `${minutes} phút trước`;
     if (hours < 24) return `${hours} giờ trước`;
     if (days < 7) return `${days} ngày trước`;
-    
+
     return date.toLocaleDateString('vi-VN');
   };
 

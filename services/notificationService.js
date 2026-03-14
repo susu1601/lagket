@@ -1,9 +1,8 @@
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
   onSnapshot,
   updateDoc,
   doc,
@@ -50,7 +49,7 @@ export async function sendNotification(recipientId, notification) {
 
     const docRef = await addDoc(collection(db, "notifications"), notificationData);
     console.log("✅ Notification sent:", docRef.id);
-    
+
     // Send push notification
     try {
       const pushToken = await getUserPushToken(recipientId);
@@ -67,7 +66,7 @@ export async function sendNotification(recipientId, notification) {
       console.warn("⚠️ Failed to send push notification:", pushError);
       // Don't throw - Firestore notification was created successfully
     }
-    
+
     return docRef.id;
   } catch (error) {
     console.error("❌ Error sending notification:", error);
@@ -82,7 +81,7 @@ export async function sendNotificationToMultiple(recipientIds, notification) {
   try {
     const batch = writeBatch(db);
     const notificationsRef = collection(db, "notifications");
-    
+
     const promises = recipientIds.map(recipientId => {
       const notificationData = {
         recipientId,
@@ -96,7 +95,7 @@ export async function sendNotificationToMultiple(recipientIds, notification) {
         read: false,
         createdAt: serverTimestamp(),
       };
-      
+
       return addDoc(notificationsRef, notificationData);
     });
 
@@ -115,17 +114,17 @@ export async function sendNotificationToMultiple(recipientIds, notification) {
 export async function notifyFriendsAboutNewPhoto(userId, userName, photoData) {
   try {
     console.log("📢 Notifying friends about new photo...");
-    
+
     // Get user's friends
     const friends = await getFriends(userId);
-    
+
     if (friends.length === 0) {
       console.log("ℹ️ No friends to notify");
       return;
     }
 
     const friendIds = friends.map(f => f.uid);
-    
+
     // Create notification
     const notification = {
       senderId: userId,
@@ -156,8 +155,7 @@ export function subscribeToNotifications(userId, callback) {
   try {
     const q = query(
       collection(db, "notifications"),
-      where("recipientId", "==", userId),
-      orderBy("createdAt", "desc")
+      where("recipientId", "==", userId)
     );
 
     const unsubscribe = onSnapshot(
@@ -172,7 +170,11 @@ export function subscribeToNotifications(userId, callback) {
             createdAt: data.createdAt?.toDate?.() || new Date(),
           });
         });
-        
+
+        notifications.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
         console.log(`📬 Received ${notifications.length} notifications`);
         callback(notifications);
       },

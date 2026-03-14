@@ -4,89 +4,89 @@ import {
   ThemeGradients,
   ThemeSizes,
   ThemeSpacing,
-} from './types';
+} from "./types";
 
-import {THEME as commonTheme} from './theme';
+import { THEME as commonTheme } from "./theme";
 
 export const COLORS: ThemeColors = {
   // default text color
-  text: '#ffffff', // White text for dark mode
+  text: "#fff6fb",
 
-  // base colors - Updated with new color scheme
-  primary: '#ffcc00', // Locket-style yellow/gold accent
-  secondary: '#333333',
-  tertiary: '#222222',
+  // base colors - black & pink palette
+  primary: "#ff3e9d",
+  secondary: "#1b1623",
+  tertiary: "#131019",
 
   // non-colors
-  black: '#000000',
-  white: '#FFFFFF',
+  black: "#000000",
+  white: "#FFFFFF",
 
-  dark: '#000000',
-  light: '#ffffff',
+  dark: "#000000",
+  light: "#ffffff",
 
   // gray variations
-  gray: '#8e8e93', // Apple system gray
+  gray: "#9e90a5",
 
   // colors variations
-  danger: '#ff3b30',
-  warning: '#ffcc00',
-  success: '#34c759',
-  info: '#5ac8fa',
+  danger: "#ff3b30",
+  warning: "#ff7abf",
+  success: "#34c759",
+  info: "#ff5db0",
 
   // UI colors for navigation & card
-  card: '#1c1c1e', // Dark gray for panels/cards
-  background: '#000000', // Solid black background
+  card: "#1a1422",
+  background: "#0d0b12",
 
   // UI color for shadowColor
-  shadow: '#000000',
-  overlay: 'rgba(0,0,0,0.6)',
+  shadow: "#000000",
+  overlay: "rgba(0,0,0,0.68)",
 
   // UI color for input borderColor on focus
-  focus: '#ffcc00',
-  input: '#ffffff',
+  focus: "#ff3e9d",
+  input: "#f9f3f8",
 
   // UI color for switch checked/active color
-  switchOn: '#34c759',
-  switchOff: '#3a3a3c',
+  switchOn: "#34c759",
+  switchOff: "#3a3a3c",
 
   // UI color for checkbox icon checked/active color
-  checkbox: ['#ffcc00', '#e5b800'],
-  checkboxIcon: '#000000',
+  checkbox: ["#ff5fb3", "#d61e7d"],
+  checkboxIcon: "#000000",
 
   // social colors
-  facebook: '#3B5998',
-  twitter: '#55ACEE',
-  dribbble: '#EA4C89',
+  facebook: "#3B5998",
+  twitter: "#55ACEE",
+  dribbble: "#EA4C89",
 
   // icon tint color
-  icon: '#ffffff',
+  icon: "#ffffff",
 
   // blur tint color
-  blurTint: 'dark',
+  blurTint: "dark",
 
   // product link color
-  link: '#5ac8fa',
+  link: "#ff76c0",
 };
 
 export const GRADIENTS: ThemeGradients = {
-  primary: ['#54b6f8', '#4a9fd8', '#3d8bc7'],
-  secondary: ['#e6f7ff', '#b3e0ff', '#80c9ff'],
-  info: ['#54b6f8', '#3d8bc7'],
-  success: ['#2ecc71', '#27ae60'],
-  warning: ['#f39c12', '#e67e22'],
-  danger: ['#e74c3c', '#c0392b'],
+  primary: ["#ff8ac8", "#ff4ca8", "#d61e7d"],
+  secondary: ["#261d31", "#1b1623", "#130f1a"],
+  info: ["#ff76c0", "#d61e7d"],
+  success: ["#2ecc71", "#27ae60"],
+  warning: ["#ff8ac8", "#ff5fb3"],
+  danger: ["#e74c3c", "#c0392b"],
 
-  light: ['#ffffff', '#e6f7ff', '#cceeff'],
-  dark: ['#2c3e50', '#34495e'],
+  light: ["#fff7fb", "#ffe4f3", "#ffd1ea"],
+  dark: ["#0d0b12", "#191321"],
 
-  white: [String(COLORS.white), '#f8fcff'],
-  black: [String(COLORS.black), '#2c3e50'],
+  white: [String(COLORS.white), "#ffeaf5"],
+  black: [String(COLORS.black), "#22192d"],
 
-  divider: ['rgba(84, 182, 248, 0.3)', 'rgba(74, 159, 216, 0.6)'],
+  divider: ["rgba(255, 95, 179, 0.28)", "rgba(214, 30, 125, 0.62)"],
   menu: [
-    'rgba(230, 247, 255, 0.9)',
-    'rgba(84, 182, 248, 0.5)',
-    'rgba(230, 247, 255, 0.9)',
+    "rgba(36, 26, 46, 0.94)",
+    "rgba(255, 95, 179, 0.35)",
+    "rgba(36, 26, 46, 0.94)",
   ],
 };
 
@@ -167,5 +167,5 @@ export const light: ITheme = {
   ...commonTheme,
   colors: COLORS,
   gradients: GRADIENTS,
-  sizes: {...SIZES, ...commonTheme.sizes, ...SPACING},
+  sizes: { ...SIZES, ...commonTheme.sizes, ...SPACING },
 };

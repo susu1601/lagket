@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MMA Photo App",
-    "slug": "mma-photo-app",
+    "name": "lagket",
+    "slug": "lagket",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mma.photoapp",
+      "bundleIdentifier": "com.mma.lagket",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.mma.photoapp",
+      "package": "com.mma.lagket",
       "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true
     },

@@ -31,7 +31,7 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
       const entries = Object.values(reactions);
       setReactionCount(entries.length);
       setReactionsList(entries);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
 
   const toggleFavorite = async () => {
     if (!user || !photo?.id) return;
-    
+
     try {
       if (favorited) {
         await removeFromFavorites(user.uid, photo.id);
@@ -104,14 +104,14 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
           onPress: async () => {
             try {
               console.log('Deleting photo:', { photoId: photo.id, userId: photo.userId });
-              
+
               // Xóa từ local storage
               await deletePhotoLocal(photo.userId || user.uid, photo.id);
-              
+
               // Xóa từ Firebase userAlbum
               const { deletePhotoFromUserAlbum } = require('../../services/userAlbumService');
               await deletePhotoFromUserAlbum(user.uid, photo.id);
-              
+
               Alert.alert('Thành công', 'Đã xóa ảnh', [
                 {
                   text: 'OK',
@@ -164,13 +164,11 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
       {/* Header */}
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => {
-          navigation.navigate('Home');
-          setTimeout(() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Home' }],
-            });
-          }, 100);
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('Home');
+          }
         }} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
@@ -179,13 +177,13 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
             <Ionicons name="information-circle-outline" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity onPress={toggleFavorite} style={styles.headerButton}>
-            <Ionicons 
-              name={favorited ? "heart" : "heart-outline"} 
-              size={26} 
-              color={favorited ? "#ff3b30" : "#fff"} 
+            <Ionicons
+              name={favorited ? "heart" : "heart-outline"}
+              size={26}
+              color={favorited ? "#ff3b30" : "#fff"}
             />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleDeletePhoto}
             style={styles.headerButton}>
             <Ionicons name="trash-outline" size={24} color="#fff" />
@@ -225,21 +223,21 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
 
       {/* Info Panel - Swipeable */}
       {showInfo && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.infoPanel,
             { transform: [{ translateY }] }
           ]}
           {...panResponder.panHandlers}>
           <View style={styles.swipeHandle} />
-          
+
           {photo.createdAt && (
             <View style={styles.infoRow}>
               <Ionicons name="time-outline" size={18} color="#666" />
               <Text style={styles.infoText}>
-                {new Date(photo.createdAt).toLocaleDateString('vi-VN', { 
-                  day: '2-digit', 
-                  month: '2-digit', 
+                {new Date(photo.createdAt).toLocaleDateString('vi-VN', {
+                  day: '2-digit',
+                  month: '2-digit',
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
@@ -247,7 +245,7 @@ export default function MyPhotoDetailScreen({ route, navigation }) {
               </Text>
             </View>
           )}
-          
+
           {photo.location && (
             <View style={styles.infoRow}>
               <Ionicons name="location-outline" size={18} color="#666" />

@@ -1,22 +1,21 @@
 import React, { useEffect, useState, useContext, useMemo } from "react";
-import { 
+import {
   View,
   Text,
   ScrollView,
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  RefreshControl, 
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
   Dimensions,
   Alert,
   ActivityIndicator
 } from "react-native";
 import SafeImage from "../components/SafeImage";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { getUserAlbum } from "../services/userAlbumService";
 import { AuthContext } from "../context/AuthContext";
-import { savePhotoToCloudinary, deletePhotoFromCloudinary } from "../services/cloudinaryPhotoService";
+import { deletePhotoFromCloudinary } from "../services/cloudinaryPhotoService";
 import { navigateToPhotoDetail } from "../utils/navigationHelper";
 
 const { width } = Dimensions.get('window');
@@ -28,7 +27,6 @@ export default function AlbumScreen({ navigation }) {
   const { user } = useContext(AuthContext);
   const [photos, setPhotos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState('collections'); // 'collections' or 'all'
   const [selectionMode, setSelectionMode] = useState(false);
@@ -52,55 +50,6 @@ export default function AlbumScreen({ navigation }) {
     setRefreshing(true);
     await loadPhotos();
     setRefreshing(false);
-  };
-
-  const handlePickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert('Lỗi', 'Cần quyền truy cập thư viện ảnh');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        await handleUploadPhoto(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Lỗi', 'Không thể chọn ảnh');
-    }
-  };
-
-  const handleUploadPhoto = async (uri) => {
-    try {
-      setUploading(true);
-      await savePhotoToCloudinary(
-        { 
-          uri, 
-          coords: null, 
-          note: "", 
-          labels: [], 
-          isSelfie: false, 
-          source: "gallery" 
-        }, 
-        user.uid
-      );
-      Alert.alert('Thành công', 'Đã tải ảnh lên');
-      await loadPhotos();
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      Alert.alert('Lỗi', 'Không thể tải ảnh lên. Vui lòng thử lại.');
-    } finally {
-      setUploading(false);
-    }
   };
 
   const toggleSelectionMode = () => {
@@ -133,11 +82,11 @@ export default function AlbumScreen({ navigation }) {
             try {
               setDeleting(true);
               const photosToDelete = photos.filter(p => selectedPhotos.has(p.id));
-              
+
               for (const photo of photosToDelete) {
                 await deletePhotoFromCloudinary(photo.id, user.uid);
               }
-              
+
               Alert.alert('Thành công', `Đã xóa ${selectedPhotos.size} ảnh`);
               setSelectedPhotos(new Set());
               setSelectionMode(false);
@@ -174,7 +123,7 @@ export default function AlbumScreen({ navigation }) {
         tagMap[tag].push(photo);
       });
     });
-    
+
     // Sort by number of photos and take top tags
     return Object.entries(tagMap)
       .sort((a, b) => b[1].length - a[1].length)
@@ -192,8 +141,8 @@ export default function AlbumScreen({ navigation }) {
           navigateToPhotoDetail(navigation, item, user);
         }
       }}>
-      <SafeImage 
-        source={{ uri: item.cloudinaryUrl }} 
+      <SafeImage
+        source={{ uri: item.cloudinaryUrl }}
         style={styles.featuredImage}
         resizeMode="cover"
       />
@@ -215,7 +164,7 @@ export default function AlbumScreen({ navigation }) {
 
   const renderTagCollection = ({ tag, photos: tagPhotos }) => (
     <View key={tag} style={styles.tagSection}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.tagHeader}
         onPress={() => navigation.navigate('AlbumByTag', { tag })}>
         <Text style={styles.tagTitle}>{tag}</Text>
@@ -224,9 +173,9 @@ export default function AlbumScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={18} color="#c7c7cc" />
         </View>
       </TouchableOpacity>
-      
-      <ScrollView 
-        horizontal 
+
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tagPhotos}>
         {tagPhotos.slice(0, 6).map(photo => (
@@ -240,8 +189,8 @@ export default function AlbumScreen({ navigation }) {
                 navigateToPhotoDetail(navigation, photo, user);
               }
             }}>
-            <SafeImage 
-              source={{ uri: photo.cloudinaryUrl }} 
+            <SafeImage
+              source={{ uri: photo.cloudinaryUrl }}
               style={styles.tagPhotoImage}
               resizeMode="cover"
             />
@@ -270,17 +219,17 @@ export default function AlbumScreen({ navigation }) {
         <View style={styles.headerButtons}>
           {selectionMode ? (
             <>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleDeleteSelected}
                 disabled={selectedPhotos.size === 0}
                 style={[styles.headerButton, selectedPhotos.size === 0 && styles.disabledButton]}>
-                <Ionicons 
-                  name="trash-outline" 
-                  size={24} 
-                  color={selectedPhotos.size === 0 ? "#ccc" : "#ff3b30"} 
+                <Ionicons
+                  name="trash-outline"
+                  size={24}
+                  color={selectedPhotos.size === 0 ? "#ccc" : "#ff3b30"}
                 />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={toggleSelectionMode}
                 style={styles.headerButton}>
                 <Ionicons name="close" size={24} color="#fff" />
@@ -288,22 +237,12 @@ export default function AlbumScreen({ navigation }) {
             </>
           ) : (
             <>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={toggleSelectionMode}
                 style={styles.headerButton}>
                 <Ionicons name="checkmark-circle-outline" size={24} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={handlePickImage} 
-                disabled={uploading}
-                style={styles.headerButton}>
-                <Ionicons 
-                  name="images-outline" 
-                  size={24} 
-                  color={uploading ? "#555" : "#fff"} 
-                />
-              </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => navigation.navigate('Camera')}
                 style={styles.headerButton}>
                 <Ionicons name="camera-outline" size={24} color="#fff" />
@@ -318,7 +257,7 @@ export default function AlbumScreen({ navigation }) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        
+
         {/* Stats */}
         <View style={styles.statsBar}>
           {selectionMode ? (
@@ -327,10 +266,10 @@ export default function AlbumScreen({ navigation }) {
             </Text>
           ) : (
             <View style={styles.statsPill}>
-              <Ionicons name="images" size={14} color="#ffcc00" style={{marginRight: 4}} />
+              <Ionicons name="images" size={14} color="#ffcc00" style={{ marginRight: 4 }} />
               <Text style={styles.statsText}>{photos.length} ảnh</Text>
               <View style={styles.statsDivider} />
-              <Ionicons name="flame" size={14} color="#ff3b30" style={{marginRight: 4}} />
+              <Ionicons name="flame" size={14} color="#ff3b30" style={{ marginRight: 4 }} />
               <Text style={styles.statsText}>0d chuỗi</Text>
             </View>
           )}
@@ -360,20 +299,20 @@ export default function AlbumScreen({ navigation }) {
               <Text style={styles.sectionTitle}>
                 {viewMode === 'collections' ? 'Bộ sưu tập' : 'Tất cả ảnh'}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setViewMode(viewMode === 'collections' ? 'all' : 'collections')}
                 style={styles.viewAllButton}>
                 <Text style={styles.viewAllText}>
                   {viewMode === 'collections' ? 'Xem tất cả' : 'Bộ sưu tập'}
                 </Text>
-                <Ionicons 
-                  name={viewMode === 'collections' ? 'grid-outline' : 'albums-outline'} 
-                  size={18} 
-                  color="#ffcc00" 
+                <Ionicons
+                  name={viewMode === 'collections' ? 'grid-outline' : 'albums-outline'}
+                  size={18}
+                  color="#ffcc00"
                 />
               </TouchableOpacity>
             </View>
-            
+
             {viewMode === 'collections' ? (
               photosByTag.map(item => renderTagCollection(item))
             ) : (
@@ -389,8 +328,8 @@ export default function AlbumScreen({ navigation }) {
                         navigateToPhotoDetail(navigation, photo, user);
                       }
                     }}>
-                    <SafeImage 
-                      source={{ uri: photo.cloudinaryUrl }} 
+                    <SafeImage
+                      source={{ uri: photo.cloudinaryUrl }}
                       style={styles.gridPhotoImage}
                       resizeMode="cover"
                     />
@@ -418,20 +357,11 @@ export default function AlbumScreen({ navigation }) {
           <View style={styles.emptyContainer}>
             <Ionicons name="images-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>Chưa có ảnh nào</Text>
-            <Text style={styles.emptySubtext}>Chụp ảnh hoặc tải lên từ thư viện</Text>
+            <Text style={styles.emptySubtext}>Chụp ảnh để bắt đầu bộ sưu tập của bạn</Text>
           </View>
         )}
       </ScrollView>
 
-      {uploading && (
-        <View style={styles.uploadingOverlay}>
-          <View style={styles.uploadingBox}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.uploadingText}>Đang tải lên...</Text>
-          </View>
-        </View>
-      )}
-      
       {deleting && (
         <View style={styles.uploadingOverlay}>
           <View style={styles.uploadingBox}>

@@ -4,8 +4,8 @@
 module.exports = ({ config }) => {
   return {
     ...config,
-    name: "WeShare",
-    slug: "weshare",
+    name: "lagket",
+    slug: "lagket",
     owner: "admina2",
     version: "1.0.0",
     orientation: "portrait",
@@ -56,7 +56,7 @@ module.exports = ({ config }) => {
       },
       HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY,
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-      CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET ,
+      CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
       // GEMINI removed
     },
   };

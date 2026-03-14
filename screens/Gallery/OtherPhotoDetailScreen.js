@@ -119,13 +119,11 @@ export default function OtherPhotoDetailScreen({ route, navigation }) {
       {/* Header */}
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => {
-          navigation.navigate('Home');
-          setTimeout(() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Home' }],
-            });
-          }, 100);
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('Home');
+          }
         }} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>

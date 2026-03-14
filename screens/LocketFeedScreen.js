@@ -258,11 +258,7 @@ export default function LocketFeedScreen({ route, navigation }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
 
-  useEffect(() => {
-    loadFeed();
-  }, [user?.uid]);
-
-  const loadFeed = async () => {
+  const loadFeed = useCallback(async () => {
     try {
       if (!user?.uid) return;
 
@@ -303,13 +299,32 @@ export default function LocketFeedScreen({ route, navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid, newPhoto?.id]);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  useEffect(() => {
+    if (!newPhoto?.id || !user?.uid) return;
+
+    // Show newly uploaded photo immediately without waiting for remote fetch.
+    setFeedItems((prev) => {
+      const withoutNew = (prev || []).filter((p) => p.id !== newPhoto.id);
+      return [{ ...newPhoto, _isNewPost: true, userId: user.uid }, ...withoutNew];
+    });
+
+    setActiveIndex(0);
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+  }, [newPhoto?.id, user?.uid]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadFeed();
     setRefreshing(false);
-  }, [user?.uid]);
+  }, [loadFeed]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {

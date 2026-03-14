@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { savePhotoToCloudinary } from "../services/cloudinaryPhotoService";
 import { addPhotoToUserAlbum, getUserAlbum, getFriendsRecentPhotos } from "../services/userAlbumService";
@@ -415,14 +416,51 @@ export default function CameraScreen({ navigation }) {
     }
   };
 
+  const pickPhotoFromLibrary = async () => {
+    if (isCapturing || loading) return;
+
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Lỗi", "Cần quyền truy cập thư viện ảnh");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      setPhoto({
+        uri: asset.uri,
+        fileName: asset.fileName || `upload_${Date.now()}.jpg`,
+        width: asset.width,
+        height: asset.height,
+        source: "picker",
+      });
+      setCoords(null);
+      setLocationName(null);
+      setIncludeLocation(false);
+      setSuggestedCaptions([]);
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Lỗi", "Không thể chọn ảnh từ thư viện");
+    }
+  };
+
   const onSave = async () => {
     if (!photo) return alert("Chụp ảnh trước đã 😅");
     setLoading(true);
 
     try {
-      const isSelfie = facing === "front";
+      const sourceType = photo?.source || "camera";
+      const isSelfie = sourceType === "camera" && facing === "front";
 
-      let photoData = { uri: photo.uri, coords, note, labels: [], isSelfie, source: "camera" };
+      let photoData = { uri: photo.uri, coords, note, labels: [], isSelfie, source: sourceType };
 
       if (!photo.uri.startsWith('file://')) {
         photoData.uri = photo.uri;
@@ -432,14 +470,19 @@ export default function CameraScreen({ navigation }) {
 
       console.log("💾 Syncing photo to Firebase...");
 
-      const cloudinaryUrl = created.uri || created.cloudinaryUrl;
+      const photoId = created.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const cloudinaryUrl =
+        created.cloudinaryUrl ||
+        created.uri ||
+        created.secureUrl ||
+        created.cloudinary?.secureUrl;
 
       if (!cloudinaryUrl || cloudinaryUrl.startsWith('file://')) {
         throw new Error("Không thể upload ảnh lên Cloudinary. Vui lòng kiểm tra kết nối internet và thử lại.");
       }
 
       await addPhotoToUserAlbum(user.uid, {
-        id: created.id,
+        id: photoId,
         cloudinaryUrl: cloudinaryUrl,
         publicId: created.cloudinary?.publicId || created.publicId,
         caption: note,
@@ -457,6 +500,18 @@ export default function CameraScreen({ navigation }) {
       });
       console.log("✅ Photo synced to Firebase with URL:", cloudinaryUrl);
 
+      try {
+        const verifyAlbum = await getUserAlbum(user.uid, 5);
+        const existsInAlbum = (verifyAlbum.photos || []).some(p => String(p.id) === String(photoId));
+        console.log("🔎 Verify Firebase album after save:", {
+          photoId,
+          existsInAlbum,
+          albumCount: (verifyAlbum.photos || []).length,
+        });
+      } catch (verifyError) {
+        console.warn("⚠️ Could not verify saved photo in album:", verifyError);
+      }
+
       if (notifyFriends) {
         try {
           console.log("📢 Notifying friends about new photo...");
@@ -464,8 +519,8 @@ export default function CameraScreen({ navigation }) {
             user.uid,
             user.displayName || user.email,
             {
-              id: created.id,
-              cloudinaryUrl: created.uri,
+              id: photoId,
+              cloudinaryUrl: cloudinaryUrl,
               caption: note,
               note: note
             }
@@ -486,8 +541,8 @@ export default function CameraScreen({ navigation }) {
       setSuggestedCaptions([]);
 
       const newPhotoData = {
-        id: created.id,
-        cloudinaryUrl: created.uri || created.cloudinaryUrl,
+        id: photoId,
+        cloudinaryUrl: cloudinaryUrl,
         userId: user.uid,
         publicId: created.cloudinary?.publicId || created.publicId,
         caption: note,
@@ -578,10 +633,10 @@ export default function CameraScreen({ navigation }) {
 
               <TouchableOpacity
                 style={styles.bottomSideButton}
-                onPress={() => setFacing((cur) => (cur === "back" ? "front" : "back"))}
+                onPress={pickPhotoFromLibrary}
                 disabled={isCapturing}
               >
-                <Ionicons name="camera-reverse" size={26} color="#fff" />
+                <Ionicons name="arrow-up-circle-outline" size={28} color="#fff" />
               </TouchableOpacity>
             </View>
 

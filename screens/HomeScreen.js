@@ -1,22 +1,23 @@
 import React, { useContext, useEffect, useState, useCallback } from "react";
-import { 
+import {
   View,
-  TouchableOpacity, 
-  FlatList, 
+  TouchableOpacity,
+  FlatList,
   Dimensions,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Animated,
   Alert,
 } from "react-native";
 import SafeImage from "../components/SafeImage";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthContext } from "../context/AuthContext";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../services/firebase";
 import { useNotifications } from "../context/NotificationContext";
 import { Text } from "../components/ui";
-import useTheme from "../hooks/useTheme";
 import { getUserAlbum, deletePhotoFromUserAlbum } from "../services/userAlbumService";
 import { addToFavorites, removeFromFavorites, isFavorited } from "../services/favoriteService";
 import { subscribeToUserChats, getUnreadCount } from "../services/chatService";
@@ -140,7 +141,6 @@ function OwnFeedCard({ item, currentUser, onDelete }) {
 // ─── Main Home Screen ──────────────────────────────────
 export default function HomeScreen({ navigation }) {
   const { user } = useContext(AuthContext);
-  const { colors, sizes } = useTheme();
   const { unreadCount: notifUnreadCount } = useNotifications();
   const [ownPhotos, setOwnPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +149,36 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     loadPhotos();
+  }, [user?.uid]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPhotos();
+    }, [user?.uid])
+  );
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const albumRef = doc(db, "userAlbums", user.uid);
+    const unsubscribe = onSnapshot(
+      albumRef,
+      async () => {
+        try {
+          const albumData = await getUserAlbum(user.uid, 30);
+          setOwnPhotos(albumData.photos || []);
+        } catch (error) {
+          console.error("Error syncing photos in realtime:", error);
+        } finally {
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Home realtime album listener error:", error);
+      }
+    );
+
+    return () => unsubscribe();
   }, [user?.uid]);
 
   // Subscribe to chat unread count
@@ -213,7 +243,7 @@ export default function HomeScreen({ navigation }) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             {/* Chat button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => navigation.navigate('Friends', { screen: 'ChatList' })}
               style={{ position: 'relative' }}
             >
@@ -226,7 +256,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             {/* Notification button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => navigation.navigate('Notifications')}
               style={{ position: 'relative' }}
             >

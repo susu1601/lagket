@@ -1,17 +1,17 @@
-// MB Bank Color Palette - Minimalist Design System
+// lagket Color Palette - Black & Pink Design System
 export const colors = {
-  // Primary Colors — soft charcoal accent for text/icons
+  // Primary Colors — pink accent scale
   primary: {
-    50: '#F5F6F8',
-    100: '#ECEFF3',
-    200: '#D9DEE6',
-    300: '#B9C0CC',
-    400: '#8E97A6',
-    500: '#2D3142', // soft charcoal
-    600: '#242838',
-    700: '#1C2030',
-    800: '#151926',
-    900: '#0E121C',
+    50: '#FFF2F8',
+    100: '#FFD9EC',
+    200: '#FFB3DA',
+    300: '#FF85C2',
+    400: '#FF5AAE',
+    500: '#FF3E9D',
+    600: '#EA1F86',
+    700: '#C3116C',
+    800: '#8A0D4C',
+    900: '#52072D',
   },
 
   // Pastel accent palette inspired by reference UI
@@ -26,20 +26,20 @@ export const colors = {
     sage: '#DCEAD9',
   },
 
-  // Neutral Colors
+  // Neutral Colors (black-first)
   neutral: {
     0: '#FFFFFF',
-    50: '#FAFAFA',
-    100: '#F6F6F6',
-    200: '#EDEDED',
-    300: '#E3E3E3',
-    400: '#BDBDBD',
-    500: '#8F8F8F',
-    600: '#6B6B6B',
-    700: '#4D4D4D',
-    800: '#2F2F2F',
-    900: '#1A1A1A',
-    950: '#0A0A0A',
+    50: '#F5F5F7',
+    100: '#E8E8EC',
+    200: '#CFCFD8',
+    300: '#AFAFBD',
+    400: '#8C8C9D',
+    500: '#6D6D7E',
+    600: '#4E4E60',
+    700: '#373746',
+    800: '#20202A',
+    900: '#121218',
+    950: '#08080D',
   },
 
   // Semantic Colors
@@ -67,35 +67,35 @@ export const colors = {
     600: '#2563EB',
   },
 
-  // Background Colors — warm, soft canvas
+  // Background Colors — black/pink harmony
   background: {
-    primary: '#F3EAE2', // warm beige canvas
-    secondary: '#F7F1EB',
-    tertiary: '#FBF7F3',
-    overlay: 'rgba(0, 0, 0, 0.5)',
+    primary: '#0D0B12',
+    secondary: '#14101C',
+    tertiary: '#1A1424',
+    overlay: 'rgba(0, 0, 0, 0.62)',
   },
 
   // Text Colors
   text: {
-    primary: '#171717',
-    secondary: '#525252',
-    tertiary: '#A3A3A3',
+    primary: '#FFF8FC',
+    secondary: '#E0D6DF',
+    tertiary: '#A699AB',
     inverse: '#FFFFFF',
-    disabled: '#D4D4D4',
+    disabled: '#706576',
   },
 
   // Border Colors
   border: {
-    light: '#E5E5E5',
-    medium: '#D4D4D4',
-    dark: '#A3A3A3',
+    light: '#2B2333',
+    medium: '#473A53',
+    dark: '#6A557B',
   },
 
   // Shadow Colors
   shadow: {
-    light: 'rgba(0, 0, 0, 0.06)',
-    medium: 'rgba(0, 0, 0, 0.1)',
-    dark: 'rgba(0, 0, 0, 0.16)',
+    light: 'rgba(0, 0, 0, 0.22)',
+    medium: 'rgba(0, 0, 0, 0.32)',
+    dark: 'rgba(0, 0, 0, 0.44)',
   },
 };
 
@@ -104,17 +104,17 @@ export const colorCombinations = {
   primary: colors.primary[500],
   primaryLight: colors.primary[100],
   primaryDark: colors.primary[700],
-  
+
   background: colors.background.primary,
   backgroundSecondary: colors.background.secondary,
-  
+
   textPrimary: colors.text.primary,
   textSecondary: colors.text.secondary,
   textTertiary: colors.text.tertiary,
-  
+
   border: colors.border.light,
   borderMedium: colors.border.medium,
-  
+
   success: colors.success[500],
   warning: colors.warning[500],
   error: colors.error[500],

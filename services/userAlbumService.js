@@ -16,6 +16,16 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 
+function pickRemotePhotoUrl(photoData) {
+  return (
+    photoData?.cloudinaryUrl ||
+    photoData?.uri ||
+    photoData?.secureUrl ||
+    photoData?.cloudinary?.secureUrl ||
+    null
+  );
+}
+
 // Firestore structure:
 // userAlbums/{userId} = {
 //   userId: string,
@@ -43,9 +53,15 @@ export async function addPhotoToUserAlbum(userId, photoData) {
     // Generate unique ID: timestamp + random string
     const uniqueId = photoData.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    const remoteUrl = pickRemotePhotoUrl(photoData);
+    if (!remoteUrl || String(remoteUrl).startsWith("file://")) {
+      throw new Error("cloudinaryUrl không hợp lệ khi lưu album");
+    }
+
     const photo = {
       id: uniqueId,
-      cloudinaryUrl: photoData.cloudinaryUrl,
+      cloudinaryUrl: remoteUrl,
+      uri: remoteUrl,
       publicId: photoData.publicId,
       caption: photoData.caption || "",
       tags: photoData.tags || [],
@@ -170,12 +186,12 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
 
     const data = albumSnap.data();
 
-    // Filter out invalid photos (no cloudinaryUrl) and ensure unique IDs
+    // Filter out invalid photos (must have a remote URL) and ensure unique IDs
     const validPhotos = (data.photos || [])
       .filter(photo => {
-        // Must have cloudinaryUrl
-        if (!photo.cloudinaryUrl) {
-          console.warn("⚠️ Skipping photo without cloudinaryUrl:", photo.id);
+        const remoteUrl = photo.cloudinaryUrl || photo.uri;
+        if (!remoteUrl || String(remoteUrl).startsWith("file://")) {
+          console.warn("⚠️ Skipping photo without valid remote URL:", photo.id);
           return false;
         }
         return true;
@@ -200,6 +216,8 @@ export async function getUserAlbum(userId, maxPhotos = 100) {
       .slice(0, maxPhotos)
       .map(photo => ({
         ...photo,
+        cloudinaryUrl: photo.cloudinaryUrl || photo.uri,
+        uri: photo.uri || photo.cloudinaryUrl,
         userId: photo.userId || userId,
         userName: photo.userName || data.userName || "Bạn",
       }));
@@ -360,13 +378,20 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
         const album = await getUserAlbum(friendId, 5);
         // Try to get userName from the album doc
         let userName = "Bạn bè";
+        let userAvatar = null;
         try {
           const albumSnap = await getDoc(doc(db, "userAlbums", friendId));
           if (albumSnap.exists()) {
             userName = albumSnap.data().userName || "Bạn bè";
           }
+          const userSnap = await getDoc(doc(db, "users", friendId));
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            userName = userData.displayName || userName;
+            userAvatar = userData.avatar || null;
+          }
         } catch (e) { }
-        return { ...album, userName };
+        return { ...album, userName, userAvatar };
       })
     );
 
@@ -378,6 +403,7 @@ export async function getFriendsRecentPhotos(userId, maxPhotos = 20) {
           ...photo,
           userId: album.userId,
           userName: album.userName,
+          userAvatar: album.userAvatar || null,
         });
       });
     });

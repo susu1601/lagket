@@ -51,9 +51,6 @@ module.exports = ({ config }) => {
       ]
     ],
     extra: {
-      eas: {
-        projectId: "2329bd9a-1ab3-4422-8108-d5aa71e94b50"
-      },
       HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY,
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,

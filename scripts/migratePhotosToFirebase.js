@@ -2,14 +2,33 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, doc, setDoc } from "firebase/firestore";
 
+// const firebaseConfig = {
+//   apiKey: "AIzaSyBIzlLnulTQCMTjqa-s9wSjE4tzNu_S_fU",
+//   authDomain: "appp-92bd1.firebaseapp.com",
+//   projectId: "appp-92bd1",
+//   storageBucket: "appp-92bd1.firebasestorage.app",
+//   messagingSenderId: "266853425631",
+//   appId: "1:266853425631:web:a3704a3e75da244b5f646a",
+//   measurementId: "G-6C8JD2PEJZ"
+// };
+
+// const firebaseConfig = {
+//   apiKey: "AIzaSyBWpDVERFKlEPZyVp4RGGFBZG2csyAOdLE",
+//   authDomain: "we-share-43b11.firebaseapp.com",
+//   projectId: "we-share-43b11",
+//   storageBucket: "we-share-43b11.firebasestorage.app",
+//   messagingSenderId: "71205270137",
+//   appId: "1:71205270137:web:ceca9343f90197e77f9aa8"
+// };
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBIzlLnulTQCMTjqa-s9wSjE4tzNu_S_fU",
-  authDomain: "appp-92bd1.firebaseapp.com",
-  projectId: "appp-92bd1",
-  storageBucket: "appp-92bd1.firebasestorage.app",
-  messagingSenderId: "266853425631",
-  appId: "1:266853425631:web:a3704a3e75da244b5f646a",
-  measurementId: "G-6C8JD2PEJZ"
+  apiKey: "AIzaSyACPsnfB9D9EGwzsij1dVUmfxhMDZiFtvg",
+  authDomain: "weshare-7b3b9.firebaseapp.com",
+  projectId: "weshare-7b3b9",
+  storageBucket: "weshare-7b3b9.firebasestorage.app",
+  messagingSenderId: "656343949905",
+  appId: "1:656343949905:web:f8e399f6e91ac673610e70",
+  measurementId: "G-BL69HMC0KW"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -22,29 +41,29 @@ async function migratePhotos() {
   try {
     console.log("🔍 Fetching all users...");
     const usersSnapshot = await getDocs(collection(db, "users"));
-    
+
     console.log(`📊 Found ${usersSnapshot.size} users`);
-    
+
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
       const userData = userDoc.data();
-      
+
       console.log(`\n👤 Processing user: ${userData.email || userId}`);
-      
+
       // Fetch photos from Cloudinary for this user
       // Note: You need to implement this based on how you store photos in Cloudinary
       // For now, we'll create a sample migration
-      
+
       const samplePhotos = await fetchCloudinaryPhotos(userId);
-      
+
       if (samplePhotos.length === 0) {
         console.log(`   ⏭️  No photos found, skipping`);
         continue;
       }
-      
+
       // Create userAlbum document
       const albumRef = doc(db, "userAlbums", userId);
-      
+
       const albumData = {
         userId: userId,
         photos: samplePhotos.map(photo => ({
@@ -61,13 +80,13 @@ async function migratePhotos() {
         totalPhotos: samplePhotos.length,
         lastUpdated: new Date().toISOString()
       };
-      
+
       await setDoc(albumRef, albumData);
       console.log(`   ✅ Migrated ${samplePhotos.length} photos`);
     }
-    
+
     console.log(`\n🎉 Migration complete!`);
-    
+
   } catch (error) {
     console.error("❌ Migration error:", error);
   }
@@ -86,16 +105,16 @@ async function fetchCloudinaryPhotos(userId) {
     //   max_results: 500
     // });
     // return result.resources;
-    
+
     // Option 2: Fetch from your existing photo storage
     // If you store photo metadata in Firestore/AsyncStorage
-    
+
     // For now, return empty array
     console.log(`   🔍 Fetching Cloudinary photos for user ${userId}...`);
-    
+
     // You can also use Cloudinary's search API
     // https://cloudinary.com/documentation/search_api
-    
+
     return [];
   } catch (error) {
     console.error(`   ❌ Error fetching photos for ${userId}:`, error);

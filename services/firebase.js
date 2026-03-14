@@ -15,13 +15,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 //     measurementId: "G-6C8JD2PEJZ"
 //   };
 
+// const firebaseConfig = {
+//   apiKey: "AIzaSyBWpDVERFKlEPZyVp4RGGFBZG2csyAOdLE",
+//   authDomain: "we-share-43b11.firebaseapp.com",
+//   projectId: "we-share-43b11",
+//   storageBucket: "we-share-43b11.firebasestorage.app",
+//   messagingSenderId: "71205270137",
+//   appId: "1:71205270137:web:ceca9343f90197e77f9aa8"
+// };
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBWpDVERFKlEPZyVp4RGGFBZG2csyAOdLE",
-  authDomain: "we-share-43b11.firebaseapp.com",
-  projectId: "we-share-43b11",
-  storageBucket: "we-share-43b11.firebasestorage.app",
-  messagingSenderId: "71205270137",
-  appId: "1:71205270137:web:ceca9343f90197e77f9aa8"
+  apiKey: "AIzaSyACPsnfB9D9EGwzsij1dVUmfxhMDZiFtvg",
+  authDomain: "weshare-7b3b9.firebaseapp.com",
+  projectId: "weshare-7b3b9",
+  storageBucket: "weshare-7b3b9.firebasestorage.app",
+  messagingSenderId: "656343949905",
+  appId: "1:656343949905:web:f8e399f6e91ac673610e70",
+  measurementId: "G-BL69HMC0KW"
 };
 
 const app = initializeApp(firebaseConfig);

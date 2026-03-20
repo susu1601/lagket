@@ -8,8 +8,8 @@ const EXTRA = (Constants?.expoConfig?.extra) || {};
 
 // Cloud name is not a secret; provide a safe fallback for convenience
 export const CLOUDINARY_CONFIG = {
-  cloud_name: EXTRA.CLOUDINARY_CLOUD_NAME || "diiqmfjhd",
-  upload_preset: EXTRA.CLOUDINARY_UPLOAD_PRESET || "m1_default",
+  cloud_name: EXTRA.CLOUDINARY_CLOUD_NAME,
+  upload_preset: EXTRA.CLOUDINARY_UPLOAD_PRESET,
   api_key: EXTRA.CLOUDINARY_API_KEY || "",
 };
 
@@ -28,23 +28,23 @@ export function validateCloudinaryUrl(url) {
   if (!url || typeof url !== 'string') {
     return null;
   }
-  
+
   // Check if it's already a valid HTTP URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  
+
   // Check if it's a file:// URL (invalid for remote display)
   if (url.startsWith('file://')) {
     console.warn('Invalid file:// URL detected:', url);
     return null;
   }
-  
+
   // If it's a Cloudinary public ID, construct the URL
   if (url && !url.includes('://')) {
     return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloud_name}/image/upload/${url}`;
   }
-  
+
   return url;
 }
 
@@ -61,7 +61,7 @@ function extractAutoTags(uploadResult) {
 export async function uploadImageToCloudinary(fileUri, userId) {
   try {
     assertCloudinaryConfigured();
-    
+
     console.log("📤 Cloudinary config:", {
       cloud_name: CLOUDINARY_CONFIG.cloud_name,
       upload_preset: CLOUDINARY_CONFIG.upload_preset,
@@ -71,28 +71,28 @@ export async function uploadImageToCloudinary(fileUri, userId) {
         CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET || "not_set"
       }
     });
-    
+
     // Ensure file URI is valid for Expo/EAS Build
     let validFileUri = fileUri;
     if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
       validFileUri = `file://${fileUri}`;
     }
-    
+
     console.log("📤 File URI:", validFileUri);
-    
+
     const formData = new FormData();
-    
+
     // For Expo/EAS Build compatibility, ensure proper file object format
     formData.append("file", {
       uri: validFileUri,
       type: "image/jpeg", // Critical: must specify exact MIME type
       name: `photo_${Date.now()}.jpg`,
     });
-    
+
     formData.append("upload_preset", CLOUDINARY_CONFIG.upload_preset);
     formData.append("folder", `photos/${userId}`);
     formData.append("tags", `user:${userId}`);
-    
+
     // Add API key for signed uploads (if available)
     if (CLOUDINARY_CONFIG.api_key) {
       formData.append("api_key", CLOUDINARY_CONFIG.api_key);
@@ -170,7 +170,7 @@ async function writeAll(list) {
 function articleFor(word) {
   const w = String(word || "").trim().toLowerCase();
   if (!w) return "a";
-  return ["a","e","i","o","u"].includes(w[0]) ? "an" : "a";
+  return ["a", "e", "i", "o", "u"].includes(w[0]) ? "an" : "a";
 }
 
 function canonicalMap(label) {
@@ -203,8 +203,8 @@ function sanitizeLabels(labels) {
   const input = Array.from(new Set((labels || []).map(x => String(x).toLowerCase().trim()).filter(Boolean)));
   // Always hide user-specific tags from app display
   const withoutUserTags = input.filter(l => !l.startsWith("user:"));
-  const genericHuman = new Set(["person","people","human","face","selfie"]);
-  const specificHuman = new Set(["man","woman","boy","girl","portrait","child","baby"]);
+  const genericHuman = new Set(["person", "people", "human", "face", "selfie"]);
+  const specificHuman = new Set(["man", "woman", "boy", "girl", "portrait", "child", "baby"]);
 
   const hasSpecificHuman = withoutUserTags.some(l => specificHuman.has(l));
   const hasNonHuman = withoutUserTags.some(l => !genericHuman.has(l) && !specificHuman.has(l));
@@ -223,12 +223,12 @@ function sanitizeLabels(labels) {
 // Infer hierarchical categories from labels
 function inferCategories(labels) {
   const set = new Set((labels || []).map(l => String(l).toLowerCase().trim()));
-  const humanGeneric = ["person","people","human","face","selfie"];
-  const humanSpecific = ["man","woman","boy","girl","portrait","child","baby"];
+  const humanGeneric = ["person", "people", "human", "face", "selfie"];
+  const humanSpecific = ["man", "woman", "boy", "girl", "portrait", "child", "baby"];
   const animalWords = [
-    "animal","dog","cat","bird","fish","horse","cow","sheep","goat","pig","chicken",
-    "duck","goose","rabbit","hamster","turtle","frog","insect","butterfly","spider",
-    "puppy","kitten","parrot","pet","wildlife"
+    "animal", "dog", "cat", "bird", "fish", "horse", "cow", "sheep", "goat", "pig", "chicken",
+    "duck", "goose", "rabbit", "hamster", "turtle", "frog", "insect", "butterfly", "spider",
+    "puppy", "kitten", "parrot", "pet", "wildlife"
   ];
 
   const hasHuman = [...humanGeneric, ...humanSpecific].some(w => set.has(w));
@@ -294,19 +294,19 @@ export async function savePhotoLocal({ uri, coords, note = "", labels = [], user
 
 export async function savePhotoToCloudinary({ uri, coords, note = "", labels = [], isSelfie = false, source = "camera" }, userId) {
   const timestamp = new Date().toISOString();
-  
+
   try {
     // Upload to Cloudinary first
     console.log("📤 Uploading to Cloudinary...");
     const cloudinaryResult = await uploadImageToCloudinary(uri, userId);
     console.log("✅ Cloudinary upload successful:", cloudinaryResult.publicId);
-    
+
     // Get AI labels using Hugging Face
     console.log("🤖 Analyzing image with AI (Hugging Face)...");
     const hfScoredPrimary = await classifyImageByFileUri(uri);
     // Rank labels giving slight preference to CLIP style when available
     let top3 = pickTopByScore(cloudinaryResult.autoTags || [], hfScoredPrimary || [], [], 3);
-    
+
     // Fallback to secondary HF pipeline if primary returns empty
     if (!top3.length) {
       try {
@@ -367,9 +367,9 @@ export async function savePhotoToCloudinary({ uri, coords, note = "", labels = [
     const saved = await readAll();
     saved.push(photo);
     await writeAll(saved);
-    
+
     console.log("💾 Photo saved locally with Cloudinary URL");
-    
+
     // Firebase sync will be handled by caller (CameraScreen)
     console.log("✅ Photo ready for Firebase sync by caller");
 
@@ -381,7 +381,7 @@ export async function savePhotoToCloudinary({ uri, coords, note = "", labels = [
           classifyImageByUrlScored(cloudinaryResult.secureUrl),
           classifyClipByUrl(cloudinaryResult.secureUrl)
         ]);
-        
+
         const top = sanitizeLabels(pickTopByScore(cloudinaryResult.autoTags || [], hf || [], clip || [], 3));
         if (top && top.length) {
           await updatePhotoLabels(photo.id, userId, top);
@@ -393,10 +393,10 @@ export async function savePhotoToCloudinary({ uri, coords, note = "", labels = [
     })();
 
     return photo;
-    
+
   } catch (cloudinaryError) {
     console.error("❌ Cloudinary upload failed:", cloudinaryError);
-    
+
     // Re-throw the error instead of falling back to local storage
     throw new Error(`Không thể upload ảnh lên Cloudinary: ${cloudinaryError.message}`);
   }
@@ -486,24 +486,24 @@ export function getPhotosByLabel(photos, label) {
 export async function deletePhotoFromCloudinary(photoId, userId) {
   try {
     console.log('🗑️ Attempting to delete photo:', { photoId, userId });
-    
+
     // Import Firebase delete function
     const { deletePhotoFromUserAlbum } = require('./userAlbumService');
-    
+
     // Delete from Firebase first (main data source)
     const deletedPhoto = await deletePhotoFromUserAlbum(userId, photoId);
-    
+
     if (!deletedPhoto) {
       console.log('⚠️ Photo not found in Firebase, checking local storage...');
-      
+
       // Fallback: try local storage
       const allPhotos = await readAll();
       const photoToDelete = allPhotos.find(p => p.id === photoId && p.userId === userId);
-      
+
       if (!photoToDelete) {
         throw new Error('Không tìm thấy ảnh để xóa');
       }
-      
+
       // Delete from local storage
       const filtered = allPhotos.filter(p => !(p.userId === userId && p.id === photoId));
       await writeAll(filtered);
@@ -511,7 +511,7 @@ export async function deletePhotoFromCloudinary(photoId, userId) {
     } else {
       console.log('✅ Photo deleted from Firebase:', photoId);
     }
-    
+
     return true;
   } catch (error) {
     console.error('❌ Error deleting photo:', error);

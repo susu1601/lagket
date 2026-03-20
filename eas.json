@@ -7,12 +7,20 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "CLOUDINARY_CLOUD_NAME": "dwfggjmuu",
+        "CLOUDINARY_UPLOAD_PRESET": "m1_default"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "CLOUDINARY_CLOUD_NAME": "dwfggjmuu",
+        "CLOUDINARY_UPLOAD_PRESET": "m1_default"
+      },
       "android": {
         "buildType": "apk"
       }

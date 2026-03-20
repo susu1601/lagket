@@ -16,7 +16,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mma.lagket",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Chúng tôi cần quyền truy cập camera để chụp ảnh",
+        "NSPhotoLibraryUsageDescription": "Chúng tôi cần quyền truy cập thư viện ảnh",
+        "NSPhotoLibraryAddUsageDescription": "Chúng tôi cần quyền lưu ảnh vào thư viện"
       }
     },
     "android": {
@@ -26,7 +29,14 @@
       },
       "package": "com.mma.lagket",
       "softwareKeyboardLayoutMode": "pan",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -287,9 +287,13 @@ export default function CameraScreen({ navigation }) {
     mountedRef.current = true;
     (async () => {
       await Location.requestForegroundPermissionsAsync();
+      // Request camera permissions on mount
+      if (permission && !permission.granted) {
+        await requestPermission();
+      }
     })();
     return () => { mountedRef.current = false; };
-  }, []);
+  }, [permission, requestPermission]);
 
   const loadFeed = useCallback(async () => {
     if (!user?.uid) return;
@@ -341,7 +345,14 @@ export default function CameraScreen({ navigation }) {
     }
   }, [feedLoaded, feedLoading, loadFeed]);
 
-  if (!permission) return <View />;
+  if (!permission) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#54b6f8" />
+        <Text style={{ textAlign: "center", marginTop: 16, color: "#fff" }}>Đang tải...</Text>
+      </View>
+    );
+  }
   if (!permission.granted) {
     return (
       <View style={styles.container}>

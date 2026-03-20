@@ -60,6 +60,7 @@ export async function addReaction(
           message: `${userName} đã thả ${emoji} cho ảnh của bạn`,
           data: {
             photoId,
+            ownerUserId,
             emoji,
             photoUrl: photoMeta?.photoUrl || null,
             caption: photoMeta?.caption || "",

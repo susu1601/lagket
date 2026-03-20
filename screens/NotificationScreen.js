@@ -14,6 +14,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { NOTIFICATION_TYPES } from "../services/notificationService";
 import { AuthContext } from "../context/AuthContext";
 import { getUserAlbum } from "../services/userAlbumService";
+import { navigateToPhotoDetail } from "../utils/navigationHelper";
 
 export default function NotificationScreen({ navigation }) {
   const { theme } = useTheme();
@@ -24,17 +25,25 @@ export default function NotificationScreen({ navigation }) {
     const photoId = notification?.data?.photoId;
     if (!photoId || !user?.uid) return null;
 
+    const isNewPhotoNotification = notification?.type === NOTIFICATION_TYPES.NEW_PHOTO;
+    const ownerUserId =
+      notification?.data?.ownerUserId ||
+      (isNewPhotoNotification ? notification?.senderId : user?.uid);
+
     try {
-      const album = await getUserAlbum(user.uid, 300);
+      const album = await getUserAlbum(ownerUserId, 500);
       const matchedPhoto = (album?.photos || []).find(
         (p) => String(p?.id) === String(photoId)
       );
 
       if (matchedPhoto) {
+        const isOwnPhoto = ownerUserId === user.uid;
         return {
           ...matchedPhoto,
-          userId: matchedPhoto.userId || user.uid,
-          userName: matchedPhoto.userName || user.displayName || "Bạn",
+          userId: matchedPhoto.userId || ownerUserId,
+          userName:
+            matchedPhoto.userName ||
+            (isOwnPhoto ? (user.displayName || "Bạn") : (notification?.senderName || "Bạn bè")),
         };
       }
     } catch (error) {
@@ -42,10 +51,11 @@ export default function NotificationScreen({ navigation }) {
     }
 
     if (notification?.data?.photoUrl) {
+      const isOwnPhoto = ownerUserId === user.uid;
       return {
         id: photoId,
-        userId: user.uid,
-        userName: user.displayName || "Bạn",
+        userId: ownerUserId,
+        userName: isOwnPhoto ? (user.displayName || "Bạn") : (notification?.senderName || "Bạn bè"),
         cloudinaryUrl: notification.data.photoUrl,
         caption: notification.data.caption || "",
         createdAt: notification.createdAt,
@@ -74,15 +84,20 @@ export default function NotificationScreen({ navigation }) {
           }
         });
       } else {
-        // Navigate to friend's album
-        const friendId = notification.senderId;
-        navigation.navigate("Friends", {
-          screen: "FriendAlbum",
-          params: {
-            friendId: friendId,
-            friendName: notification.senderName
-          }
-        });
+        // Navigate directly to the specific photo when possible.
+        const photo = await resolvePhotoFromNotification(notification);
+        if (photo) {
+          navigateToPhotoDetail(navigation, photo, user);
+        } else {
+          const friendId = notification.senderId;
+          navigation.navigate("Friends", {
+            screen: "FriendAlbum",
+            params: {
+              friendId: friendId,
+              friendName: notification.senderName
+            }
+          });
+        }
       }
     } else if (notification.type === NOTIFICATION_TYPES.FRIEND_REQUEST) {
       // Navigate to friends screen
@@ -96,9 +111,28 @@ export default function NotificationScreen({ navigation }) {
     } else if (notification.type === NOTIFICATION_TYPES.REACTION) {
       const photo = await resolvePhotoFromNotification(notification);
       if (photo) {
-        navigation.navigate("MyPhotoDetail", { photo });
+        navigateToPhotoDetail(navigation, photo, user);
       } else {
         navigation.navigate("Home");
+      }
+    } else if (notification.type === NOTIFICATION_TYPES.CHAT_MESSAGE) {
+      const chatId = notification?.data?.chatId;
+      const senderId = notification?.senderId || notification?.data?.senderId;
+
+      if (chatId && senderId) {
+        navigation.navigate("Friends", {
+          screen: "ChatDetail",
+          params: {
+            chatId,
+            otherUser: {
+              uid: senderId,
+              name: notification?.senderName || notification?.data?.senderName || "Người dùng",
+              avatar: notification?.senderAvatar || notification?.data?.senderAvatar || null,
+            },
+          },
+        });
+      } else {
+        navigation.navigate("Friends", { screen: "ChatList" });
       }
     }
   };
@@ -135,6 +169,9 @@ export default function NotificationScreen({ navigation }) {
           )}
           {item.type === NOTIFICATION_TYPES.REACTION && (
             <Ionicons name="happy" size={20} color="#ff9500" />
+          )}
+          {item.type === NOTIFICATION_TYPES.CHAT_MESSAGE && (
+            <Ionicons name="chatbubble" size={20} color="#34c759" />
           )}
         </View>
 

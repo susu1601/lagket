@@ -1,5 +1,5 @@
 // Chat service for Firestore
-import { 
+import {
   collection,
   doc,
   getDoc,
@@ -42,18 +42,18 @@ export async function getOrCreateChat(userId1, userId2) {
     // Sort user IDs to ensure consistent chat ID
     const participants = [userId1, userId2].sort();
     const chatId = participants.join('_');
-    
+
     const chatRef = doc(db, 'chats', chatId);
     const chatSnap = await getDoc(chatRef);
-    
+
     if (chatSnap.exists()) {
       return { id: chatId, ...chatSnap.data() };
     }
-    
+
     // Create new chat
     const user1 = await getUserById(userId1);
     const user2 = await getUserById(userId2);
-    
+
     const newChat = {
       participants,
       participantDetails: {
@@ -70,7 +70,7 @@ export async function getOrCreateChat(userId1, userId2) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     await setDoc(chatRef, newChat);
     return { id: chatId, ...newChat };
   } catch (error) {
@@ -88,17 +88,17 @@ export async function getUserChats(userId) {
       where('participants', 'array-contains', userId),
       orderBy('updatedAt', 'desc')
     );
-    
+
     const snapshot = await getDocs(q);
     const chats = [];
-    
+
     snapshot.forEach(doc => {
       chats.push({
         id: doc.id,
         ...doc.data()
       });
     });
-    
+
     return chats;
   } catch (error) {
     console.error('Error getting user chats:', error);
@@ -111,9 +111,10 @@ export async function sendMessage(chatId, senderId, text) {
   try {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const chatRef = doc(db, 'chats', chatId);
-    
+    const chatSnap = await getDoc(chatRef);
+
     const now = Timestamp.now();
-    
+
     // Add message with server timestamp
     const messageData = {
       senderId,
@@ -123,9 +124,9 @@ export async function sendMessage(chatId, senderId, text) {
       createdAt: now,
       read: false
     };
-    
+
     await addDoc(messagesRef, messageData);
-    
+
     // Update chat's last message
     await updateDoc(chatRef, {
       lastMessage: {
@@ -136,6 +137,37 @@ export async function sendMessage(chatId, senderId, text) {
       },
       updatedAt: now
     });
+
+    // Send notification to the other participant.
+    try {
+      if (chatSnap.exists()) {
+        const chatData = chatSnap.data() || {};
+        const participants = chatData.participants || [];
+        const recipientId = participants.find((id) => id !== senderId);
+        const senderInfo = chatData.participantDetails?.[senderId] || {};
+
+        if (recipientId) {
+          const { sendNotification, NOTIFICATION_TYPES } = require('./notificationService');
+          await sendNotification(recipientId, {
+            senderId,
+            senderName: senderInfo.name || 'Bạn bè',
+            senderAvatar: senderInfo.avatar || null,
+            type: NOTIFICATION_TYPES.CHAT_MESSAGE,
+            title: senderInfo.name || 'Tin nhắn mới',
+            message: text,
+            data: {
+              chatId,
+              senderId,
+              senderName: senderInfo.name || 'Bạn bè',
+              senderAvatar: senderInfo.avatar || null,
+              messageType: 'text'
+            }
+          });
+        }
+      }
+    } catch (notifyError) {
+      console.warn('⚠️ Failed to send chat notification:', notifyError);
+    }
   } catch (error) {
     console.error('❌ Error sending message:', error);
     throw error;
@@ -147,12 +179,13 @@ export async function sendImageMessage(chatId, senderId, imageUrl, caption = '')
   try {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const chatRef = doc(db, 'chats', chatId);
-    
+    const chatSnap = await getDoc(chatRef);
+
     const now = Timestamp.now();
-    
+
     // Ensure imageUrl is a string
     const imageUrlString = String(imageUrl || '');
-    
+
     // Add message with server timestamp
     const messageData = {
       senderId: String(senderId),
@@ -163,9 +196,9 @@ export async function sendImageMessage(chatId, senderId, imageUrl, caption = '')
       createdAt: now,
       read: false
     };
-    
+
     await addDoc(messagesRef, messageData);
-    
+
     // Update chat's last message
     await updateDoc(chatRef, {
       lastMessage: {
@@ -176,6 +209,37 @@ export async function sendImageMessage(chatId, senderId, imageUrl, caption = '')
       },
       updatedAt: now
     });
+
+    // Send notification to the other participant.
+    try {
+      if (chatSnap.exists()) {
+        const chatData = chatSnap.data() || {};
+        const participants = chatData.participants || [];
+        const recipientId = participants.find((id) => id !== String(senderId));
+        const senderInfo = chatData.participantDetails?.[String(senderId)] || {};
+
+        if (recipientId) {
+          const { sendNotification, NOTIFICATION_TYPES } = require('./notificationService');
+          await sendNotification(recipientId, {
+            senderId: String(senderId),
+            senderName: senderInfo.name || 'Bạn bè',
+            senderAvatar: senderInfo.avatar || null,
+            type: NOTIFICATION_TYPES.CHAT_MESSAGE,
+            title: senderInfo.name || 'Tin nhắn mới',
+            message: caption || '📷 Đã gửi một hình ảnh',
+            data: {
+              chatId,
+              senderId: String(senderId),
+              senderName: senderInfo.name || 'Bạn bè',
+              senderAvatar: senderInfo.avatar || null,
+              messageType: 'image'
+            }
+          });
+        }
+      }
+    } catch (notifyError) {
+      console.warn('⚠️ Failed to send chat notification:', notifyError);
+    }
   } catch (error) {
     console.error('❌ Error sending image message:', error);
     throw error;
@@ -187,7 +251,7 @@ export function subscribeToMessages(chatId, callback) {
   try {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const messages = [];
       snapshot.forEach(doc => {
@@ -197,14 +261,14 @@ export function subscribeToMessages(chatId, callback) {
           ...data
         });
       });
-      
+
       callback(messages);
     });
-    
+
     return unsubscribe;
   } catch (error) {
     console.error('❌ Error subscribing to messages:', error);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -217,7 +281,7 @@ export function subscribeToUserChats(userId, callback) {
       where('participants', 'array-contains', userId),
       orderBy('updatedAt', 'desc')
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chats = [];
       snapshot.forEach(doc => {
@@ -228,11 +292,11 @@ export function subscribeToUserChats(userId, callback) {
       });
       callback(chats);
     });
-    
+
     return unsubscribe;
   } catch (error) {
     console.error('❌ Error subscribing to chats:', error);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -243,7 +307,7 @@ export async function markMessagesAsRead(chatId, userId) {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const snapshot = await getDocs(messagesRef);
     const updatePromises = [];
-    
+
     snapshot.forEach(doc => {
       const message = doc.data();
       // Only update if message is from other user and not read
@@ -253,10 +317,10 @@ export async function markMessagesAsRead(chatId, userId) {
         );
       }
     });
-    
+
     if (updatePromises.length > 0) {
       await Promise.all(updatePromises);
-      
+
       // Update parent chat document to trigger real-time listener without affecting sort order
       const chatRef = doc(db, 'chats', chatId);
       await updateDoc(chatRef, {
@@ -277,7 +341,7 @@ export async function getUnreadCount(chatId, userId) {
       where('senderId', '!=', userId),
       where('read', '==', false)
     );
-    
+
     const snapshot = await getDocs(q);
     return snapshot.size;
   } catch (error) {
@@ -291,14 +355,14 @@ export async function deleteAllMessages(chatId) {
   try {
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const snapshot = await getDocs(messagesRef);
-    
+
     const deletePromises = [];
     snapshot.forEach(doc => {
       deletePromises.push(deleteDoc(doc.ref));
     });
-    
+
     await Promise.all(deletePromises);
-    
+
     // Update chat's last message
     const chatRef = doc(db, 'chats', chatId);
     await updateDoc(chatRef, {

@@ -21,6 +21,7 @@ import { getUserPushToken, sendPushNotification } from "./pushNotificationServic
  */
 export const NOTIFICATION_TYPES = {
   NEW_PHOTO: "new_photo",
+  CHAT_MESSAGE: "chat_message",
   FRIEND_REQUEST: "friend_request",
   FRIEND_ACCEPTED: "friend_accepted",
   FAMILY_INVITATION: "family_invitation",
@@ -54,11 +55,19 @@ export async function sendNotification(recipientId, notification) {
     try {
       const pushToken = await getUserPushToken(recipientId);
       if (pushToken) {
+        const pushData = {
+          ...(notification.data || {}),
+          notificationType: notification.type,
+          senderId: notification.senderId,
+          recipientId,
+          notificationId: docRef.id,
+        };
+
         await sendPushNotification(
           pushToken,
           notification.title,
           notification.message,
-          notification.data
+          pushData
         );
         console.log("✅ Push notification sent to:", recipientId);
       }

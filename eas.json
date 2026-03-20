@@ -20,7 +20,7 @@
     "production": {
       "node": "22.11.0",
       "env": {
-        "CLOUDINARY_CLOUD_NAME": "diiqmfjhd",
+        "CLOUDINARY_CLOUD_NAME": "dwfggjmuu",
         "CLOUDINARY_UPLOAD_PRESET": "m1_default"
       },
       "android": {

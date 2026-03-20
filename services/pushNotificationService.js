@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
@@ -19,6 +20,19 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync() {
   let token;
 
+  const isExpoGo =
+    Constants.executionEnvironment === 'storeClient' ||
+    Constants.appOwnership === 'expo';
+
+  if (isExpoGo) {
+    console.warn('⚠️ Expo Go không hỗ trợ đầy đủ push notifications. Hãy dùng development build.');
+    return null;
+  }
+
+  const projectId =
+    Constants?.easConfig?.projectId ||
+    Constants?.expoConfig?.extra?.eas?.projectId;
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -31,24 +45,32 @@ export async function registerForPushNotificationsAsync() {
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    
+
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-    
+
     if (finalStatus !== 'granted') {
       console.log('❌ Failed to get push token for push notification!');
       return null;
     }
-    
+
     try {
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: '9ed00f9c-f878-45f5-b34f-4767b279940c'
-      })).data;
+      if (!projectId) {
+        console.error('❌ Missing EAS projectId. Check app.config.js -> extra.eas.projectId');
+        return null;
+      }
+
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       console.log('✅ Push token:', token);
     } catch (error) {
       console.error('❌ Error getting push token:', error);
+      console.error('ℹ️ Debug push token:', {
+        projectId,
+        executionEnvironment: Constants.executionEnvironment,
+        appOwnership: Constants.appOwnership,
+      });
       return null;
     }
   } else {
@@ -70,7 +92,7 @@ export async function savePushToken(userId, token) {
       pushToken: token,
       pushTokenUpdatedAt: new Date().toISOString(),
     }, { merge: true });
-    
+
     console.log('✅ Push token saved to Firestore');
   } catch (error) {
     console.error('❌ Error saving push token:', error);
@@ -84,7 +106,7 @@ export async function getUserPushToken(userId) {
   try {
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
-    
+
     if (userDoc.exists()) {
       return userDoc.data().pushToken;
     }
